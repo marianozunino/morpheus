@@ -45,6 +45,12 @@ jobs:
           yarn build
           yarn test:cov
 
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          path-to-lcov: "./coverage/lcov.info"
+
       - name: Release
         shell: bash
         env:

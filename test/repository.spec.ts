@@ -1,6 +1,6 @@
 import { Connection, Node } from 'cypher-query-builder';
-import { Repository } from './repository';
-import { BASELINE, MigrationLabel, Neo4jMigration } from './types';
+import { Repository } from '../src/repository';
+import { BASELINE, MigrationLabel, Neo4jMigration } from '../src/types';
 
 function buildQueryBuilder(override?: Record<string, jest.Mock>): any {
   const queryBuilder = {

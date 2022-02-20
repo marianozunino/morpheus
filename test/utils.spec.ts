@@ -8,7 +8,7 @@ import {
   generateMigration,
   getFileContentAndId,
   getMigrationName,
-} from './utils';
+} from '../src/utils';
 
 describe('utils', () => {
   beforeAll(() => {
