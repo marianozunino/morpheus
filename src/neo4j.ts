@@ -59,7 +59,7 @@ export class Neo4j {
   private static registerExitHook() {
     process.on('exit', () => {
       if (this.connection) {
-        this.connection.close();
+        this.connection.close().catch(console.error);
       }
     });
   }

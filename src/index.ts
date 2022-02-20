@@ -33,7 +33,7 @@ program
   .command('migrate')
   .description('executes migrations')
   .action(() => {
-    asyncExecutionWrapper(async () => await new Migrator().migrate());
+    void asyncExecutionWrapper(async () => await new Migrator().migrate());
   });
 
 program.parse();
