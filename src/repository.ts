@@ -1,6 +1,6 @@
 import { Connection, node, Node, relation } from 'cypher-query-builder';
 import { Transaction } from 'neo4j-driver-core';
-import { Neo4jMigration, MigrationNode } from './types';
+import { Neo4jMigration, MigrationLabel, BASELINE } from './types';
 
 export class Repository {
   constructor(private readonly connection: Connection) {}
@@ -8,7 +8,7 @@ export class Repository {
   public async fetchBaselineNode(): Promise<Neo4jMigration> {
     const [baseNode] = await this.connection
       .query()
-      .matchNode('base', MigrationNode)
+      .matchNode('base', MigrationLabel)
       .where({ 'base.id': 0 })
       .return('base')
       .run<Node<Neo4jMigration>>();
@@ -35,7 +35,7 @@ export class Repository {
   public async getLatestMigration(): Promise<Neo4jMigration> {
     const [latestMigration] = await this.connection
       .query()
-      .matchNode('migration', MigrationNode)
+      .matchNode('migration', MigrationLabel)
       .return('migration')
       .orderBy('toInteger(migration.id)', 'DESC')
       .limit(1)
@@ -45,15 +45,15 @@ export class Repository {
 
   public async createConstraints(): Promise<void> {
     await this.executeQueries([
-      `CREATE CONSTRAINT unique_id_${MigrationNode} IF NOT exists ON (p:${MigrationNode}) ASSERT p.id IS UNIQUE;`,
-      `CREATE INDEX idx_id_${MigrationNode} IF NOT exists FOR (p:${MigrationNode}) ON (p.id);`,
+      `CREATE CONSTRAINT unique_id_${MigrationLabel} IF NOT exists ON (p:${MigrationLabel}) ASSERT p.id IS UNIQUE;`,
+      `CREATE INDEX idx_id_${MigrationLabel} IF NOT exists FOR (p:${MigrationLabel}) ON (p.id);`,
     ]);
   }
 
   public async createBaseNode(): Promise<void> {
     await this.connection
       .query()
-      .createNode('base', MigrationNode, { id: 0, name: 'BASELINE' })
+      .createNode('base', MigrationLabel, { id: 0, name: BASELINE })
       .run();
   }
 
@@ -63,7 +63,7 @@ export class Repository {
     const rows = await this.connection
       .query()
       .raw(
-        ` MATCH (migration:__Neo4jMigration)
+        `MATCH (migration:__Neo4jMigration)
   WHERE toInteger(migration.id) <= toInteger(${migrationId})
   AND migration.checksum IS NOT NULL
   RETURN migration`,
@@ -85,7 +85,7 @@ export class Repository {
   ): string {
     return this.connection
       .query()
-      .matchNode('migration', MigrationNode)
+      .matchNode('migration', MigrationLabel)
       .where({ 'migration.id': fromId })
       .with('migration')
       .create([
@@ -93,7 +93,7 @@ export class Repository {
         relation('out', ':MIGRATED_TO', {
           date: new Date().getTime().toString(),
         }),
-        node('newMigration', MigrationNode, neo4jMigration),
+        node('newMigration', MigrationLabel, neo4jMigration),
       ])
       .return('newMigration')
       .interpolate();

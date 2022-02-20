@@ -5,4 +5,6 @@ export type Neo4jMigration = {
   fileName: string;
 };
 
-export const MigrationNode = '__Neo4jMigration' as const;
+export const MigrationLabel = '__Neo4jMigration' as const;
+
+export const BASELINE = 'BASELINE' as const;

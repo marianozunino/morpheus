@@ -11,6 +11,7 @@ const config: Config.InitialOptions = {
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
   verbose: false,
+  coverageReporters: ["json-summary", "html"]
 };
 
 export default config;
