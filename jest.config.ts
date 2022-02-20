@@ -7,11 +7,11 @@ const config: Config.InitialOptions = {
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
-  collectCoverageFrom: ['**/*.ts'],
+  collectCoverageFrom: ['src/**/*.ts'],
   coverageDirectory: './coverage',
   testEnvironment: 'node',
   verbose: false,
-  coverageReporters: ["lcov", "text"]
+  coverageReporters: ["lcov", "text", "html"]
 };
 
 export default config;

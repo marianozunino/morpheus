@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 import { Command } from 'commander';
 import { Migrator } from './migrator';
+import { Neo4j } from './neo4j';
 import {
   generateMigration,
   createMigrationsFolder,
@@ -61,3 +62,7 @@ function executionWrapper(...executables: CallableFunction[]): void {
     process.exit(0);
   }
 }
+
+process.on('exit', () => {
+  Neo4j.close().catch(console.error);
+});
