@@ -8,10 +8,10 @@ const config: Config.InitialOptions = {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
   collectCoverageFrom: ['**/*.ts'],
-  coverageDirectory: '../coverage',
+  coverageDirectory: './coverage',
   testEnvironment: 'node',
   verbose: false,
-  coverageReporters: ["json-summary", "html"]
+  coverageReporters: ["lcov", "text"]
 };
 
 export default config;

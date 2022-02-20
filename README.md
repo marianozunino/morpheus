@@ -1,4 +1,5 @@
 [![build-deploy](https://github.com/marianozunino/morpheus/actions/workflows/build_deploy.yml/badge.svg)](https://github.com/marianozunino/morpheus/actions/workflows/build_deploy.yml)
+[![Coverage Status](https://coveralls.io/repos/github/marianozunino/morpheus/badge.svg?branch=master)](https://coveralls.io/github/marianozunino/morpheus?branch=master)
 [![a](https://img.shields.io/badge/npm-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/morpheus4j)
 # Morpheus
 
