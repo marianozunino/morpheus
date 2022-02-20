@@ -1,5 +1,6 @@
-import { Connection, node, relation } from 'cypher-query-builder';
 import { Neo4j } from './neo4j';
+import { Repository } from './repository';
+import { Neo4jMigration } from './types';
 import {
   generateChecksum,
   getFileContentAndId,
@@ -8,12 +9,11 @@ import {
 } from './utils';
 
 export class Migrator {
-  private connection: Connection;
   private latestMigrationId: string;
-  private readonly MigrationNode = '__Neo4jMigration';
+  private repository: Repository;
 
   public async migrate() {
-    this.connection = await Neo4j.getConnection();
+    await this.initializeRepository();
     await this.assertBaseNodeExists();
     await this.getLatestMigration();
     await this.verifyChecksumOfOldMigrations();
@@ -22,61 +22,59 @@ export class Migrator {
     if (candidateMigrations.length === 0) {
       console.log('Database is up to date');
     }
+
     for (const fileName of candidateMigrations) {
-      const { migrationId, fileContent } = getFileContentAndId(fileName);
-      const migrationName = getMigrationName(fileName);
-
-      const migrationQuery = this.buildMigrationQuery(
-        migrationId,
-        fileName,
-        fileContent,
-        migrationName,
-      );
-
-      console.log(`Executing migration: ${migrationName}`);
-      const trx = this.connection.session().beginTransaction();
-      await trx.run(migrationQuery);
-      const statements = this.getFileStatements(fileContent);
-      for (const statement of statements) {
-        if (statement.trim() !== '') {
-          await trx.run(statement);
-        }
-      }
-      await trx.commit();
-      this.latestMigrationId = migrationId;
+      await this.prepareAndMigrateFile(fileName);
     }
   }
 
-  private getFileStatements(fileContent: string): string[] {
-    return fileContent.split(';');
+  private async prepareAndMigrateFile(fileName: string): Promise<void> {
+    const { migrationId, fileContent } = getFileContentAndId(fileName);
+    const migrationName = getMigrationName(fileName);
+    const migrationNode = this.buildNeo4jMigrationNode(
+      migrationId,
+      fileName,
+      fileContent,
+      migrationName,
+    );
+
+    const statements = this.getFileStatements(fileContent);
+
+    const migrationNodeQuery = this.repository.buildMigrationQuery(
+      migrationNode,
+      this.latestMigrationId,
+    );
+    statements.unshift(migrationNodeQuery);
+
+    console.log(`Executing migration: ${migrationName}`);
+    await this.repository.executeQueries(statements);
+    this.latestMigrationId = migrationId;
   }
 
-  private buildMigrationQuery(
+  private async initializeRepository() {
+    const connection = await Neo4j.getConnection();
+    this.repository = new Repository(connection);
+  }
+
+  private getFileStatements(fileContent: string): string[] {
+    return fileContent
+      .split(';')
+      .filter((statement) => statement.trim() !== '');
+  }
+
+  private buildNeo4jMigrationNode(
     migrationId: string,
     fileName: string,
     fileContent: string,
     name: string,
-  ): string {
+  ): Neo4jMigration {
     const checksum = generateChecksum(fileContent);
-    return this.connection
-      .query()
-      .matchNode('migration', this.MigrationNode)
-      .where({ 'migration.id': this.latestMigrationId })
-      .with('migration')
-      .create([
-        node('migration'),
-        relation('out', ':MIGRATED_TO', {
-          date: new Date().getTime().toString(),
-        }),
-        node('newMigration', this.MigrationNode, {
-          id: migrationId,
-          name,
-          fileName,
-          checksum,
-        }),
-      ])
-      .return('newMigration')
-      .interpolate();
+    return {
+      id: migrationId,
+      name,
+      checksum,
+      fileName,
+    };
   }
 
   private async getCandidateMigrations(): Promise<string[]> {
@@ -90,21 +88,11 @@ export class Migrator {
   }
 
   private async verifyChecksumOfOldMigrations(): Promise<void> {
-    const rows = await this.connection
-      .query()
-      .raw(
-        ` MATCH (migration:__Neo4jMigration)
-  WHERE toInteger(migration.id) <= toInteger(${this.latestMigrationId})
-  AND migration.checksum IS NOT NULL
-  RETURN migration`,
-      )
-      .run();
-    for (const row of rows) {
-      const {
-        migration: {
-          properties: { fileName, checksum },
-        },
-      } = row;
+    const migrations = await this.repository.getPreviousMigrations(
+      this.latestMigrationId,
+    );
+    for (const row of migrations) {
+      const { fileName, checksum } = row;
       this.verifyMigrationChecksum(fileName, checksum);
     }
   }
@@ -121,44 +109,15 @@ export class Migrator {
   }
 
   private async getLatestMigration(): Promise<void> {
-    const [latestMigration] = await this.connection
-      .query()
-      .matchNode('migration', this.MigrationNode)
-      .return('migration')
-      .orderBy('toInteger(migration.id)', 'DESC')
-      .limit(1)
-      .run();
-    this.latestMigrationId = latestMigration.migration.properties.id;
+    const { id } = await this.repository.getLatestMigration();
+    this.latestMigrationId = id;
   }
 
   private async assertBaseNodeExists(): Promise<void> {
-    const [baseNode] = await this.connection
-      .query()
-      .matchNode('base', this.MigrationNode)
-      .where({ 'base.id': 0 })
-      .return('base')
-      .run();
+    const baseNode = await this.repository.fetchBaselineNode();
     if (!baseNode) {
-      await this.createConstraints();
-      await this.createBaseNode();
+      await this.repository.createConstraints();
+      await this.repository.createBaseNode();
     }
-  }
-
-  async createConstraints(): Promise<void> {
-    const trx = this.connection.session().beginTransaction();
-    await trx.run(
-      `CREATE CONSTRAINT unique_id_${this.MigrationNode} IF NOT exists ON (p:${this.MigrationNode}) ASSERT p.id IS UNIQUE;`,
-    );
-    await trx.run(
-      `CREATE INDEX idx_id_${this.MigrationNode} IF NOT exists FOR (p:${this.MigrationNode}) ON (p.id);`,
-    );
-    await trx.commit();
-  }
-
-  private async createBaseNode(): Promise<void> {
-    await this.connection
-      .query()
-      .createNode('base', this.MigrationNode, { id: 0, name: 'BASELINE' })
-      .run();
   }
 }
