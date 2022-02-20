@@ -50,6 +50,7 @@
   },
   "dependencies": {
     "commander": "^9.0.0",
+    "crc": "^4.1.0",
     "cypher-query-builder": "^6.0.4",
     "joi": "^17.6.0",
     "neo4j-driver-core": "^4.4.2"

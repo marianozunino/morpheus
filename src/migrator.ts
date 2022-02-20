@@ -1,5 +1,6 @@
 import { Connection, node, relation } from 'cypher-query-builder';
 import { Neo4j } from './neo4j';
+
 import {
   generateChecksum,
   getFileContentAndId,
@@ -26,23 +27,27 @@ export class Migrator {
       const { migrationId, fileContent } = getFileContentAndId(fileName);
       const migrationName = getMigrationName(fileName);
 
-      const migrationQuery = this.buildMigrationQuery(
-        migrationId,
-        fileName,
-        fileContent,
-        migrationName,
-      );
-
+      const startTime = new Date().getTime();
       console.log(`Executing migration: ${migrationName}`);
       const trx = this.connection.session().beginTransaction();
-      await trx.run(migrationQuery);
       const statements = this.getFileStatements(fileContent);
       for (const statement of statements) {
         if (statement.trim() !== '') {
           await trx.run(statement);
         }
       }
+      const endTime = new Date().getTime();
+
+      const migrationQuery = this.buildMigrationQuery(
+        migrationId,
+        fileName,
+        fileContent,
+        migrationName,
+        endTime - startTime,
+      );
+      await trx.run(migrationQuery);
       await trx.commit();
+
       this.latestMigrationId = migrationId;
     }
   }
@@ -53,39 +58,49 @@ export class Migrator {
 
   private buildMigrationQuery(
     migrationId: string,
-    fileName: string,
+    source: string,
     fileContent: string,
-    name: string,
+    description: string,
+    duration: number,
   ): string {
     const checksum = generateChecksum(fileContent);
     return this.connection
       .query()
       .matchNode('migration', this.MigrationNode)
-      .where({ 'migration.id': this.latestMigrationId })
+      .where({ 'migration.version': this.latestMigrationId })
       .with('migration')
       .create([
         node('migration'),
-        relation('out', ':MIGRATED_TO', {
-          date: new Date().getTime().toString(),
-        }),
+        relation('out', 'r', 'MIGRATED_TO'),
         node('newMigration', this.MigrationNode, {
-          id: migrationId,
-          name,
-          fileName,
+          version: migrationId,
+          description,
+          source,
           checksum,
+          type: 'CYPHER',
         }),
       ])
+      .raw(
+        'SET r.at = datetime({timezone: "UTC"}), r.in = duration({milliseconds: $duration})',
+        { duration: duration },
+      )
       .return('newMigration')
       .interpolate();
   }
 
   private async getCandidateMigrations(): Promise<string[]> {
     const fileNames = await getFileNamesFromMigrationsFolder();
-    const candidateMigrations = fileNames.filter(
-      (fileName) =>
-        fileName.split('_')[0] > this.latestMigrationId &&
-        fileName.endsWith('.cypher'),
-    );
+    const candidateMigrations = fileNames.filter((fileName) => {
+      let f = fileName;
+      if (f.startsWith('V')) {
+        f = f.substr(1);
+      }
+      return (
+        (this.latestMigrationId == 'BASELINE' ||
+          f.split('_')[0] > this.latestMigrationId) &&
+        f.endsWith('.cypher')
+      );
+    });
     return candidateMigrations;
   }
 
@@ -93,19 +108,18 @@ export class Migrator {
     const rows = await this.connection
       .query()
       .raw(
-        ` MATCH (migration:__Neo4jMigration)
-  WHERE toInteger(migration.id) <= toInteger(${this.latestMigrationId})
-  AND migration.checksum IS NOT NULL
-  RETURN migration`,
+        `MATCH (b:__Neo4jMigration {version:'BASELINE'}) - [r:MIGRATED_TO*] -> (l:__Neo4jMigration)
+         WHERE NOT (l)-[:MIGRATED_TO]->(:__Neo4jMigration)
+         RETURN DISTINCT l`,
       )
       .run();
     for (const row of rows) {
       const {
-        migration: {
-          properties: { fileName, checksum },
+        l: {
+          properties: { source, checksum },
         },
       } = row;
-      this.verifyMigrationChecksum(fileName, checksum);
+      this.verifyMigrationChecksum(source, checksum);
     }
   }
 
@@ -124,18 +138,18 @@ export class Migrator {
     const [latestMigration] = await this.connection
       .query()
       .matchNode('migration', this.MigrationNode)
+      .raw('WHERE NOT (migration)-[:MIGRATED_TO]->(:__Neo4jMigration)')
       .return('migration')
-      .orderBy('toInteger(migration.id)', 'DESC')
       .limit(1)
       .run();
-    this.latestMigrationId = latestMigration.migration.properties.id;
+    this.latestMigrationId = latestMigration.migration.properties.version;
   }
 
   private async assertBaseNodeExists(): Promise<void> {
     const [baseNode] = await this.connection
       .query()
       .matchNode('base', this.MigrationNode)
-      .where({ 'base.id': 0 })
+      .where({ 'base.version': 'BASELINE' })
       .return('base')
       .run();
     if (!baseNode) {
@@ -147,10 +161,10 @@ export class Migrator {
   async createConstraints(): Promise<void> {
     const trx = this.connection.session().beginTransaction();
     await trx.run(
-      `CREATE CONSTRAINT unique_id_${this.MigrationNode} IF NOT exists ON (p:${this.MigrationNode}) ASSERT p.id IS UNIQUE;`,
+      `CREATE CONSTRAINT unique_id_${this.MigrationNode} IF NOT exists ON (p:${this.MigrationNode}) ASSERT p.version IS UNIQUE;`,
     );
     await trx.run(
-      `CREATE INDEX idx_id_${this.MigrationNode} IF NOT exists FOR (p:${this.MigrationNode}) ON (p.id);`,
+      `CREATE INDEX idx_id_${this.MigrationNode} IF NOT exists FOR (p:${this.MigrationNode}) ON (p.version);`,
     );
     await trx.commit();
   }
@@ -158,7 +172,7 @@ export class Migrator {
   private async createBaseNode(): Promise<void> {
     await this.connection
       .query()
-      .createNode('base', this.MigrationNode, { id: 0, name: 'BASELINE' })
+      .createNode('base', this.MigrationNode, { id: 0, version: 'BASELINE' })
       .run();
   }
 }

@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { createHash } from 'crypto';
+import crc32 from 'crc/crc32';
 import {
   existsSync,
   mkdirSync,
@@ -11,7 +11,15 @@ import { resolve } from 'path';
 
 /* istanbul ignore next */
 export function generateChecksum(fileContent: string): string {
-  return createHash('md5').update(fileContent, 'utf8').digest('hex');
+  const statements = fileContent.split(/;(:?\r?\n|\r)/);
+  let value = null;
+  for (let statement of statements) {
+    statement = statement.trim().replace(/;$/, '');
+    if (statement !== '') {
+      value = value === null ? crc32(statement) : crc32(statement, value);
+    }
+  }
+  return value.toString();
 }
 
 // filename format: <timestamp>_<name>.cypher
@@ -22,18 +30,30 @@ export async function getFileNamesFromMigrationsFolder(): Promise<string[]> {
 }
 
 export function getMigrationName(fileName: string): string {
-  const result = fileName.match(/^(\d{13})_(\w+)\.cypher$/) as string[];
-  assert(result && result.length === 3, 'Invalid file name');
-  return result[2];
+  let result = fileName.match(/^(\d{13})_(\w+)\.cypher$/) as string[];
+  if (result && result.length === 3) {
+    return result[2];
+  } else {
+    result = fileName.match(
+      /^V(\d+(?:_\d+)*|\d+(?:\.\d+)*)__([\w ]+)(?:\.cypher)$/,
+    ) as string[];
+    assert(result && result.length === 3, 'Invalid file name');
+    return result[2].replace(/_/g, ' ');
+  }
 }
 
 export function getFileContentAndId(fileName: string): {
   migrationId: string;
   fileContent: string;
 } {
-  const result = fileName.match(/^(\d{13})_\w+\.cypher$/) as string[];
+  let result = fileName.match(/^(\d{13})_\w+\.cypher$/) as string[];
+  if (!result) {
+    result = fileName.match(
+      /^V(\d+(?:_\d+)*|\d+(?:\.\d+)*)__([\w ]+)(?:\.cypher)$/,
+    ) as string[];
+  }
   assert(result, 'Invalid file name');
-  const [, migrationId] = result;
+  const migrationId = result[1].replace(/_/g, '.');
   const filePath = resolve(process.cwd(), 'neo4j/migrations', fileName);
 
   assert(existsSync(filePath), `Migration ${fileName} not found`);
