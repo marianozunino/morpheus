@@ -38,22 +38,25 @@ describe('repository', () => {
         .spyOn(global, 'Date')
         .mockImplementationOnce(() => mockDate as unknown as string);
 
-      const migrationNode = {
-        id: 'migrationId',
-        name: 'migrationName',
+      const migrationNode: Neo4jMigration = {
+        version: '1.0.0',
+        description: 'description',
         checksum: 'checksum',
-        fileName: 'fileName',
+        type: 'CYPHER',
+        source: 'source',
       };
-      const latestMigrationId = mockDate.getTime().toString();
+      const lastMigrationVersion = mockDate.getTime().toString();
       const expectedQuery = `MATCH (migration:__Neo4jMigration)
-WHERE migration.id = '1640995200000'
+WHERE migration.version = '1640995200000'
 WITH migration
-CREATE (migration)-[:MIGRATED_TO { date: '1640995200000' }]->(newMigration:__Neo4jMigration { id: 'migrationId', name: 'migrationName', checksum: 'checksum', fileName: 'fileName' })
+CREATE (migration)-[r:MIGRATED_TO]->(newMigration:__Neo4jMigration { version: '1.0.0', description: 'description', checksum: 'checksum', type: 'CYPHER', source: 'source' })
+SET r.at = datetime({timezone: "UTC"}), r.in = duration({milliseconds: 1000})
 RETURN newMigration;`;
 
       const query = repository.buildMigrationQuery(
         migrationNode,
-        latestMigrationId,
+        lastMigrationVersion,
+        1000,
       );
 
       spy.mockRestore();
@@ -62,15 +65,16 @@ RETURN newMigration;`;
   });
   describe('fetchBaselineNode', () => {
     it('should fetch the baseline node', async () => {
-      const neo4jMigration: Neo4jMigration = {
-        id: 'baselineId',
-        name: 'baselineName',
-        checksum: 'baselineChecksum',
-        fileName: 'baselineFileName',
+      const migrationNode: Neo4jMigration = {
+        version: '1.0.0',
+        description: 'description',
+        checksum: 'checksum',
+        type: 'CYPHER',
+        source: 'source',
       };
       const baselineNode: Node<Neo4jMigration> = {
         identity: 'base',
-        properties: neo4jMigration,
+        properties: migrationNode,
         labels: [MigrationLabel],
       };
 
@@ -95,9 +99,9 @@ RETURN newMigration;`;
       expect(queryBuilder.return).toHaveBeenCalledWith('base');
       expect(queryBuilder.where).toHaveBeenCalled();
       expect(queryBuilder.where).toHaveBeenCalledWith({
-        'base.id': 0,
+        'base.version': 'BASELINE',
       });
-      expect(result).toEqual(neo4jMigration);
+      expect(result).toEqual(migrationNode);
     });
     it('should return null if no baseline node is found', async () => {
       jest
@@ -111,21 +115,22 @@ RETURN newMigration;`;
 
   describe('getPreviousMigrations', () => {
     it('should fetch all previous migrations', async () => {
-      const neo4jMigration: Neo4jMigration = {
-        id: 'baselineId',
-        name: 'baselineName',
-        checksum: 'baselineChecksum',
-        fileName: 'baselineFileName',
+      const migrationNode: Neo4jMigration = {
+        version: '1.0.0',
+        description: 'description',
+        checksum: 'checksum',
+        type: 'CYPHER',
+        source: 'source',
       };
       const baselineNode: Node<Neo4jMigration> = {
-        identity: 'base',
-        properties: neo4jMigration,
+        identity: 'l',
+        properties: migrationNode,
         labels: [MigrationLabel],
       };
 
       const queryBuilder: any = buildQueryBuilder({
         run: jest.fn().mockImplementationOnce(() => {
-          return Promise.resolve([{ migration: baselineNode }]);
+          return Promise.resolve([{ l: baselineNode }]);
         }),
       });
 
@@ -133,16 +138,16 @@ RETURN newMigration;`;
         .spyOn(connectionMock, 'query')
         .mockImplementationOnce(() => queryBuilder.query());
 
-      const result = await repository.getPreviousMigrations('id');
+      const result = await repository.getPreviousMigrations();
       expect(queryBuilder.query).toHaveBeenCalled();
       expect(queryBuilder.raw).toHaveBeenCalled();
-      expect(queryBuilder.raw)
-        .toHaveBeenCalledWith(`MATCH (migration:__Neo4jMigration)
-  WHERE toInteger(migration.id) <= toInteger(id)
-  AND migration.checksum IS NOT NULL
-  RETURN migration`);
+      expect(queryBuilder.raw).toHaveBeenCalledWith(
+        `MATCH (b:__Neo4jMigration {version:\"BASELINE\"}) - [r:MIGRATED_TO*] -> (l:__Neo4jMigration)
+         WHERE NOT (l)-[:MIGRATED_TO]->(:__Neo4jMigration)
+         RETURN DISTINCT l`,
+      );
       expect(queryBuilder.run).toHaveBeenCalled();
-      expect(result).toEqual([neo4jMigration]);
+      expect(result).toEqual([migrationNode]);
     });
   });
 
@@ -157,22 +162,24 @@ RETURN newMigration;`;
       expect(queryBuilder.createNode).toHaveBeenCalledWith(
         'base',
         MigrationLabel,
-        { id: 0, name: BASELINE },
+        { version: BASELINE },
       );
     });
   });
 
   describe('getLatestMigration', () => {
     it('should fetch the latest migration', async () => {
-      const neo4jMigration: Neo4jMigration = {
-        id: 'baselineId',
-        name: 'baselineName',
-        checksum: 'baselineChecksum',
-        fileName: 'baselineFileName',
+      const migrationNode: Neo4jMigration = {
+        version: '1.0.0',
+        description: 'description',
+        checksum: 'checksum',
+        type: 'CYPHER',
+        source: 'source',
       };
+
       const baselineNode: Node<Neo4jMigration> = {
         identity: 'base',
-        properties: neo4jMigration,
+        properties: migrationNode,
         labels: [MigrationLabel],
       };
 
@@ -196,15 +203,7 @@ RETURN newMigration;`;
       expect(queryBuilder.return).toHaveBeenCalled();
       expect(queryBuilder.return).toHaveBeenCalledWith('migration');
 
-      expect(queryBuilder.limit).toHaveBeenCalled();
-      expect(queryBuilder.limit).toHaveBeenCalledWith(1);
-
-      expect(queryBuilder.orderBy).toHaveBeenCalled();
-      expect(queryBuilder.orderBy).toHaveBeenCalledWith(
-        'toInteger(migration.id)',
-        'DESC',
-      );
-      expect(result).toEqual(neo4jMigration);
+      expect(result).toEqual(migrationNode);
     });
 
     it('should return undefined if no migrations are found', async () => {
@@ -228,14 +227,6 @@ RETURN newMigration;`;
       expect(queryBuilder.return).toHaveBeenCalled();
       expect(queryBuilder.return).toHaveBeenCalledWith('migration');
 
-      expect(queryBuilder.limit).toHaveBeenCalled();
-      expect(queryBuilder.limit).toHaveBeenCalledWith(1);
-
-      expect(queryBuilder.orderBy).toHaveBeenCalled();
-      expect(queryBuilder.orderBy).toHaveBeenCalledWith(
-        'toInteger(migration.id)',
-        'DESC',
-      );
       expect(result).toBeUndefined();
     });
   });
@@ -255,17 +246,16 @@ RETURN newMigration;`;
       jest
         .spyOn(connectionMock, 'session')
         .mockImplementationOnce(() => sessionMock);
-      await repository.executeQueries(['query1;', 'query2;']);
-      expect(connectionMock.session).toHaveBeenCalled();
+      await repository.executeQueries(
+        ['query1;', 'query2;'],
+        sessionMock.beginTransaction(),
+      );
       expect(sessionMock.beginTransaction).toHaveBeenCalled();
 
       expect(transactionMock.run).toHaveBeenCalled();
       expect(transactionMock.run).toBeCalledTimes(2);
       expect(transactionMock.run).toHaveBeenCalledWith('query1;');
       expect(transactionMock.run).toHaveBeenCalledWith('query2;');
-
-      expect(transactionMock.commit).toHaveBeenCalled();
-      expect(transactionMock.commit).toBeCalledTimes(1);
     });
 
     it('should execute the queries without a transaction', async () => {
@@ -281,7 +271,7 @@ RETURN newMigration;`;
         .spyOn(connectionMock, 'raw')
         .mockImplementationOnce(() => queryBuilder.raw());
 
-      await repository.executeQueries(['query1;', 'query2;'], false);
+      await repository.executeQueries(['query1;', 'query2;']);
       expect(connectionMock.raw).toHaveBeenCalled();
       expect(connectionMock.raw).toBeCalledTimes(2);
       expect(connectionMock.raw).toBeCalledWith('query1;');
@@ -291,7 +281,9 @@ RETURN newMigration;`;
 
   describe('createConstraints', () => {
     it('should execute the queries within a transaction', async () => {
-      jest.spyOn(repository, 'executeQueries').mockImplementation();
+      jest
+        .spyOn(repository, 'executeQueries')
+        .mockImplementationOnce(() => Promise.resolve());
       await repository.createConstraints();
       expect(repository.executeQueries).toHaveBeenCalled();
     });
@@ -299,10 +291,15 @@ RETURN newMigration;`;
 
   describe('executeQuery', () => {
     it('should execute the query', async () => {
-      jest.spyOn(repository, 'executeQueries').mockImplementation();
-      await repository.executeQuery('query');
+      jest
+        .spyOn(repository, 'executeQueries')
+        .mockImplementationOnce(() => Promise.resolve());
+      await repository.executeQuery('query;');
       expect(repository.executeQueries).toHaveBeenCalled();
-      expect(repository.executeQueries).toHaveBeenCalledWith(['query'], false);
+      expect(repository.executeQueries).toHaveBeenCalledWith(
+        ['query;'],
+        undefined,
+      );
     });
   });
 });
