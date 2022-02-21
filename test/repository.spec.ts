@@ -250,7 +250,6 @@ RETURN newMigration;`;
         ['query1;', 'query2;'],
         sessionMock.beginTransaction(),
       );
-      expect(sessionMock.beginTransaction).toHaveBeenCalled();
 
       expect(transactionMock.run).toHaveBeenCalled();
       expect(transactionMock.run).toBeCalledTimes(2);
@@ -300,6 +299,24 @@ RETURN newMigration;`;
         ['query;'],
         undefined,
       );
+    });
+  });
+
+  describe('getTransaction', () => {
+    it('should return a transaction', async () => {
+      const sessionMock = {
+        beginTransaction: jest
+          .fn()
+          .mockImplementation(() => ({ run: jest.fn() })),
+        close: jest.fn(),
+      } as any;
+
+      connectionMock.session = jest
+        .fn()
+        .mockImplementationOnce(() => sessionMock);
+      const trx = repository.getTransaction();
+      expect(sessionMock.beginTransaction).toHaveBeenCalled();
+      expect(trx).toBeDefined();
     });
   });
 });
