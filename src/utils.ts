@@ -74,7 +74,7 @@ export function createMorpheusFile(): void {
   console.log(`Morpheus file created: ${filePath}`);
 }
 
-export async function generateMigrationName(): Promise<string> {
+export async function generateMigrationVersion(): Promise<string> {
   const fileNames = await getFileNamesFromMigrationsFolder();
   const latestVersion = fileNames.reduce((acc, fileName) => {
     const { version } = getFileContentAndVersion(fileName);
@@ -87,7 +87,7 @@ export async function generateMigrationName(): Promise<string> {
 }
 
 export async function generateMigration(fileName: string) {
-  const newVersion = await generateMigrationName();
+  const newVersion = await generateMigrationVersion();
   const fileNameWithPrefix = `V${newVersion}__${fileName}.cypher`;
   const filePath = `./neo4j/migrations/${fileNameWithPrefix}`;
   const fileContent = `CREATE (agent:\`007\`) RETURN agent;`;

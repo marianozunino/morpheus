@@ -5,10 +5,14 @@ import { resolve } from 'path';
 import {
   createMigrationsFolder,
   createMorpheusFile,
+  generateChecksum,
   generateMigration,
+  generateMigrationVersion,
   getFileContentAndVersion,
   getMigrationDescription,
+  splitFileContentIntoStatements,
 } from '../src/utils';
+import { crc32 } from 'crc';
 
 describe('utils', () => {
   beforeAll(() => {
@@ -142,6 +146,44 @@ describe('utils', () => {
       expect(() => getMigrationDescription('invalid_filename')).toThrow(
         'Invalid file name',
       );
+    });
+  });
+
+  describe('generateChecksum', () => {
+    it('should generate a checksum for multiple lines', () => {
+      const statements = [
+        'MIGRATION_CONTENT',
+        'MIGRATION_CONTENT',
+        'MIGRATION_CONTENT',
+      ];
+      const checksum = generateChecksum(statements);
+      expect(checksum).toBe(crc32(statements.join('')).toString());
+    });
+  });
+
+  describe('splitFileContentIntoStatements', () => {
+    it('should split a file content into statements', () => {
+      const fileContent = `STATEMENT_1;
+       STATEMENT_2;
+       STATEMENT_3;
+       `;
+      const statements = splitFileContentIntoStatements(fileContent);
+      expect(statements).toEqual(['STATEMENT_1', 'STATEMENT_2', 'STATEMENT_3']);
+    });
+  });
+
+  describe('generateMigrationVersion', () => {
+    beforeEach(() => {
+      rimraf.sync(resolve(process.cwd(), 'neo4j/migrations/*'));
+    });
+    it('should generate a migration version if there are no previous versions', async () => {
+      const version = await generateMigrationVersion();
+      expect(version).toBe('1_0_0');
+    });
+    it('should generate a migration version if there are previous versions', async () => {
+      await generateMigration('migration_name_1');
+      const version = await generateMigrationVersion();
+      expect(version).toBe('2_0_0');
     });
   });
 });
