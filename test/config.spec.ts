@@ -1,6 +1,6 @@
 import { existsSync, unlinkSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { readMorpheusConfig } from './config';
+import { readMorpheusConfig } from '../src/config';
 
 describe('config', () => {
   describe('readMorpheusConfig', () => {

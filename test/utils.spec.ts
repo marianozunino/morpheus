@@ -5,10 +5,14 @@ import { resolve } from 'path';
 import {
   createMigrationsFolder,
   createMorpheusFile,
+  generateChecksum,
   generateMigration,
-  getFileContentAndId,
-  getMigrationName,
-} from './utils';
+  generateMigrationVersion,
+  getFileContentAndVersion,
+  getMigrationDescription,
+  splitFileContentIntoStatements,
+} from '../src/utils';
+import { crc32 } from 'crc';
 
 describe('utils', () => {
   beforeAll(() => {
@@ -23,7 +27,7 @@ describe('utils', () => {
       it('should fail when file has invalid extension', () => {
         expect.assertions(1);
         try {
-          getFileContentAndId(new Date().getTime() + '_SomeName.txt');
+          getFileContentAndVersion(new Date().getTime() + '_SomeName.txt');
         } catch (error) {
           expect(error).toMatchInlineSnapshot(
             `[AssertionError: Invalid file name]`,
@@ -34,7 +38,7 @@ describe('utils', () => {
       it('should fail when file has invalid timestamp', () => {
         expect.assertions(1);
         try {
-          getFileContentAndId('123' + '_SomeName.cypher');
+          getFileContentAndVersion('123' + '_SomeName.cypher');
         } catch (error) {
           expect(error).toMatchInlineSnapshot(
             `[AssertionError: Invalid file name]`,
@@ -43,13 +47,13 @@ describe('utils', () => {
       });
 
       it('should handle multiple underscores', () => {
-        const fileName = new Date().getTime() + '_Some_Name.cypher';
+        const fileName = 'V1_1___Some_Name.cypher';
         const filePath = resolve(process.cwd(), './neo4j/migrations', fileName);
         writeFileSync(filePath, 'MIGRATION_CONTENT');
 
-        const { fileContent, migrationId } = getFileContentAndId(fileName);
+        const { fileContent, version } = getFileContentAndVersion(fileName);
         expect(fileContent).toBe('MIGRATION_CONTENT');
-        expect(migrationId).toMatch(/^\d{13}$/);
+        expect(version).toMatch('1.1');
       });
     });
 
@@ -57,7 +61,8 @@ describe('utils', () => {
       expect.assertions(2);
       jest.spyOn(fs, 'readFileSync');
       try {
-        getFileContentAndId(new Date().getTime() + '_SomeName.cypher');
+        const fileName = 'V1_1___Some_Name.cypher';
+        getFileContentAndVersion(fileName);
       } catch (error) {
         expect(error).toBeDefined();
         expect(fs.readFileSync).not.toHaveBeenCalled();
@@ -65,11 +70,11 @@ describe('utils', () => {
     });
 
     it('should return migrationId and fileContent', () => {
-      const fileName = new Date().getTime() + '_SomeName.cypher';
+      const fileName = 'V1_1___Some_Name.cypher';
       const filePath = resolve(process.cwd(), './neo4j/migrations', fileName);
       writeFileSync(filePath, 'MIGRATION_CONTENT');
-      const { migrationId, fileContent } = getFileContentAndId(fileName);
-      expect(migrationId).toBe(fileName.split('_')[0]);
+      const { version, fileContent } = getFileContentAndVersion(fileName);
+      expect(version).toBe('1.1');
       expect(fileContent).toBe('MIGRATION_CONTENT');
     });
   });
@@ -104,20 +109,15 @@ describe('utils', () => {
     beforeEach(() => {
       rimraf.sync(resolve(process.cwd(), 'neo4j/migrations/*'));
     });
-    it('should generate a migration file', () => {
-      const mockDate = new Date();
-      const spy = jest
-        .spyOn(global, 'Date')
-        .mockImplementationOnce(() => mockDate as unknown as string);
+    it('should generate a migration file', async () => {
       const migrationName = 'migration_name';
-      generateMigration(migrationName);
-      spy.mockRestore();
+      await generateMigration(migrationName);
       expect(
         fs.existsSync(
           resolve(
             process.cwd(),
             'neo4j/migrations',
-            `${mockDate.getTime()}_${migrationName}.cypher`,
+            `V1_0_0__${migrationName}.cypher`,
           ),
         ),
       ).toBe(true);
@@ -136,17 +136,54 @@ describe('utils', () => {
     });
   });
 
-  describe('getMigrationName', () => {
+  describe('getMigrationDescription', () => {
     it('should return the migration name', () => {
-      const migrationName = 'migration_name';
-      const fileName = new Date().getTime() + '_' + migrationName + '.cypher';
-      expect(getMigrationName(fileName)).toBe(migrationName);
+      const fileName = 'V1_1___Some_Name.cypher';
+      expect(getMigrationDescription(fileName)).toBe('Some Name');
     });
 
     it('should return error if filename is invalid', () => {
-      expect(() => getMigrationName('invalid_filename')).toThrow(
+      expect(() => getMigrationDescription('invalid_filename')).toThrow(
         'Invalid file name',
       );
+    });
+  });
+
+  describe('generateChecksum', () => {
+    it('should generate a checksum for multiple lines', () => {
+      const statements = [
+        'MIGRATION_CONTENT',
+        'MIGRATION_CONTENT',
+        'MIGRATION_CONTENT',
+      ];
+      const checksum = generateChecksum(statements);
+      expect(checksum).toBe(crc32(statements.join('')).toString());
+    });
+  });
+
+  describe('splitFileContentIntoStatements', () => {
+    it('should split a file content into statements', () => {
+      const fileContent = `STATEMENT_1;
+       STATEMENT_2;
+       STATEMENT_3;
+       `;
+      const statements = splitFileContentIntoStatements(fileContent);
+      expect(statements).toEqual(['STATEMENT_1', 'STATEMENT_2', 'STATEMENT_3']);
+    });
+  });
+
+  describe('generateMigrationVersion', () => {
+    beforeEach(() => {
+      rimraf.sync(resolve(process.cwd(), 'neo4j/migrations/*'));
+    });
+    it('should generate a migration version if there are no previous versions', async () => {
+      const version = await generateMigrationVersion();
+      expect(version).toBe('1_0_0');
+    });
+    it('should generate a migration version if there are previous versions', async () => {
+      await generateMigration('migration_name_1');
+      const version = await generateMigrationVersion();
+      expect(version).toBe('2_0_0');
     });
   });
 });

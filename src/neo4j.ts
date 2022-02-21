@@ -21,21 +21,11 @@ export interface Neo4jConfig {
 
 type ConnectionWithDriver = Connection & { driver: Driver };
 
-export class ConnectionError extends Error {
-  private details: string;
-  constructor(oldError: Error) {
-    super();
-    this.name = 'ConnectionError';
-    this.message = `Connection with Neo4j database failed`;
-    this.stack = oldError.stack;
-    this.details = oldError.message;
-  }
-}
-
 export class Neo4j {
   private static connection: ConnectionWithDriver;
   private static config: Neo4jConfig;
 
+  /* istanbul ignore next */
   private constructor() {
     //
   }
@@ -51,16 +41,14 @@ export class Neo4j {
         },
       ) as ConnectionWithDriver;
       await Neo4j.connection.driver.verifyConnectivity();
-      Neo4j.registerExitHook();
     }
     return Neo4j.connection;
   }
 
-  private static registerExitHook() {
-    process.on('exit', () => {
-      if (this.connection) {
-        this.connection.close();
-      }
-    });
+  public static async close() {
+    if (this.connection) {
+      await this.connection.close();
+      this.connection = undefined;
+    }
   }
 }

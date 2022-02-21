@@ -1,12 +1,15 @@
+[![build-deploy](https://github.com/marianozunino/morpheus/actions/workflows/build_deploy.yml/badge.svg)](https://github.com/marianozunino/morpheus/actions/workflows/build_deploy.yml)
+[![Coverage Status](https://coveralls.io/repos/github/marianozunino/morpheus/badge.svg?branch=master)](https://coveralls.io/github/marianozunino/morpheus?branch=master)
+[![a](https://img.shields.io/badge/npm-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/morpheus4j)
 # Morpheus
 
 
-Morpheus is database migration tool for Neo4j written in Typescript.
+Morpheus is a database migration tool for Neo4j written in Typescript.
 > Morpheus is a modern, open-source, database migration tool for [Neo4j](http://neo4j.com).
 > It is designed to be a simple, intuitive tool for database migrations.
 > It is inspired by [Michael Simons tool for Java](https://github.com/michael-simons/neo4j-migrations).
 
-## _*This project has been tested with `Neo4j 4.4.4`*_
+### _*This project has been tested with `Neo4j 4.4.4`*_
 
 # Installation
 
@@ -27,13 +30,18 @@ Add a script to your project's package.json file:
 # Usage
 ### Create Migrations
 
-You can create migrations by running the following command:
+You can create migrations using the `morpheus` command or manually.
+
+For the first, just issue the command:
 
 ```sh
 npm run morpheus create <migration_name>
 ```
 
-Migrations will be created under the `neo4j/migrations` directory. Each migration will be a Cypher file with the name `<timestamp>_<migration_name>.cypher`.
+Migrations will be created under the `neo4j/migrations` directory. Each migration will be a Cypher file with the name `V1_0_0_<migration_name>.cypher`.
+
+Or you can create/add the migration manually  as long as it follows the naming convention as stated in the [Michael's tool](
+https://michael-simons.github.io/neo4j-migrations/current/#concepts_naming-conventions).
 
 
 ### Initial Configuration
@@ -71,8 +79,13 @@ The approach is simple. Morpheus will read all migrations in the `neo4j/migratio
 
 For each migration, Morpheus will create a transaction and execute the migration. Thus a migration may contain multiple Cypher statements (**each statement must end with `;`**).
 
-Once a migration is executed, Morpheus will keep track of the migration and will not execute it again. 
+Once a migration file is executed, Morpheus will keep track of the migration and will not execute em again. 
 
-Existing migration files that have already been executed **can not** be modified since they are stored in a database with their corresponding checksum.
+Existing migration files that have already been executed **can not** be modified since they are stored in a database with their corresponding checksum (crc32).
 
 If you want to revert a migration, create a new migration and revert the changes.
+
+## How does neo4j keep track of the migrations?
+
+You can take a look at schema and explanation on [Michael's README](
+https://michael-simons.github.io/neo4j-migrations/current/#concepts_chain) there's a neat graph that shows the migration chain.

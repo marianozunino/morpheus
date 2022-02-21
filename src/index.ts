@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 import { Command } from 'commander';
 import { Migrator } from './migrator';
+import { Neo4j } from './neo4j';
 import {
   generateMigration,
   createMigrationsFolder,
@@ -26,14 +27,14 @@ program
   .description('creates a new migration file')
   .argument('<string>', 'migration base name')
   .action((fileName: string) => {
-    executionWrapper(() => generateMigration(fileName));
+    void asyncExecutionWrapper(async () => generateMigration(fileName));
   });
 
 program
   .command('migrate')
   .description('executes migrations')
   .action(() => {
-    asyncExecutionWrapper(async () => await new Migrator().migrate());
+    void asyncExecutionWrapper(async () => await new Migrator().migrate());
   });
 
 program.parse();
@@ -61,3 +62,7 @@ function executionWrapper(...executables: CallableFunction[]): void {
     process.exit(0);
   }
 }
+
+process.on('exit', () => {
+  Neo4j.close().catch(console.error);
+});
