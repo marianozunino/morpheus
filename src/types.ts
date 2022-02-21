@@ -1,4 +1,4 @@
-export type Neo4jMigration = {
+export type Neo4jMigrationNode = {
   version: string;
   description: string;
   checksum: string;

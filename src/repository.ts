@@ -1,17 +1,17 @@
 import { Connection, node, Node, relation } from 'cypher-query-builder';
 import { Transaction } from 'neo4j-driver-core';
-import { Neo4jMigration, MigrationLabel, BASELINE } from './types';
+import { Neo4jMigrationNode, MigrationLabel, BASELINE } from './types';
 
 export class Repository {
   constructor(private readonly connection: Connection) {}
 
-  public async fetchBaselineNode(): Promise<Neo4jMigration> {
+  public async fetchBaselineNode(): Promise<Neo4jMigrationNode> {
     const [baseNode] = await this.connection
       .query()
       .matchNode('base', MigrationLabel)
       .where({ 'base.version': BASELINE })
       .return('base')
-      .run<Node<Neo4jMigration>>();
+      .run<Node<Neo4jMigrationNode>>();
     return baseNode?.base?.properties;
   }
 
@@ -30,14 +30,14 @@ export class Repository {
     }
   }
 
-  public async getLatestMigration(): Promise<Neo4jMigration> {
+  public async getLatestMigration(): Promise<Neo4jMigrationNode> {
     const [latestMigration] = await this.connection
       .query()
       .matchNode('migration', MigrationLabel)
       .raw(`WHERE NOT (migration)-[:MIGRATED_TO]->(:${MigrationLabel})`)
       .return('migration')
       .raw(`LIMIT 1`)
-      .run<Node<Neo4jMigration>>();
+      .run<Node<Neo4jMigrationNode>>();
 
     return latestMigration?.migration?.properties;
   }
@@ -56,7 +56,7 @@ export class Repository {
       .run();
   }
 
-  public async getPreviousMigrations(): Promise<Neo4jMigration[]> {
+  public async getPreviousMigrations(): Promise<Neo4jMigrationNode[]> {
     const rows = await this.connection
       .query()
       .raw(
@@ -64,7 +64,7 @@ export class Repository {
          WHERE NOT (l)-[:MIGRATED_TO]->(:${MigrationLabel})
          RETURN DISTINCT l`,
       )
-      .run<Node<Neo4jMigration>>();
+      .run<Node<Neo4jMigrationNode>>();
 
     return rows.map((row) => row.l.properties);
   }
@@ -74,7 +74,7 @@ export class Repository {
   }
 
   public buildMigrationQuery(
-    neo4jMigration: Neo4jMigration,
+    neo4jMigration: Neo4jMigrationNode,
     fromVersion: string,
     duration: number,
   ): string {

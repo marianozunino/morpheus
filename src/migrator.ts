@@ -1,6 +1,6 @@
 import { Neo4j } from './neo4j';
 import { Repository } from './repository';
-import { BASELINE, Neo4jMigration } from './types';
+import { BASELINE, Neo4jMigrationNode } from './types';
 import {
   generateChecksum,
   getFileContentAndVersion,
@@ -41,7 +41,7 @@ export class Migrator {
     const endTime = new Date().getTime();
     const duration = endTime - startTime;
 
-    const migrationNode: Neo4jMigration = {
+    const migrationNode: Neo4jMigrationNode = {
       version,
       description,
       checksum: generateChecksum(statements),

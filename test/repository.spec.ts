@@ -1,6 +1,6 @@
 import { Connection, Node } from 'cypher-query-builder';
 import { Repository } from '../src/repository';
-import { BASELINE, MigrationLabel, Neo4jMigration } from '../src/types';
+import { BASELINE, MigrationLabel, Neo4jMigrationNode } from '../src/types';
 
 function buildQueryBuilder(override?: Record<string, jest.Mock>): any {
   const queryBuilder = {
@@ -38,7 +38,7 @@ describe('repository', () => {
         .spyOn(global, 'Date')
         .mockImplementationOnce(() => mockDate as unknown as string);
 
-      const migrationNode: Neo4jMigration = {
+      const migrationNode: Neo4jMigrationNode = {
         version: '1.0.0',
         description: 'description',
         checksum: 'checksum',
@@ -65,14 +65,14 @@ RETURN newMigration;`;
   });
   describe('fetchBaselineNode', () => {
     it('should fetch the baseline node', async () => {
-      const migrationNode: Neo4jMigration = {
+      const migrationNode: Neo4jMigrationNode = {
         version: '1.0.0',
         description: 'description',
         checksum: 'checksum',
         type: 'CYPHER',
         source: 'source',
       };
-      const baselineNode: Node<Neo4jMigration> = {
+      const baselineNode: Node<Neo4jMigrationNode> = {
         identity: 'base',
         properties: migrationNode,
         labels: [MigrationLabel],
@@ -115,14 +115,14 @@ RETURN newMigration;`;
 
   describe('getPreviousMigrations', () => {
     it('should fetch all previous migrations', async () => {
-      const migrationNode: Neo4jMigration = {
+      const migrationNode: Neo4jMigrationNode = {
         version: '1.0.0',
         description: 'description',
         checksum: 'checksum',
         type: 'CYPHER',
         source: 'source',
       };
-      const baselineNode: Node<Neo4jMigration> = {
+      const baselineNode: Node<Neo4jMigrationNode> = {
         identity: 'l',
         properties: migrationNode,
         labels: [MigrationLabel],
@@ -169,7 +169,7 @@ RETURN newMigration;`;
 
   describe('getLatestMigration', () => {
     it('should fetch the latest migration', async () => {
-      const migrationNode: Neo4jMigration = {
+      const migrationNode: Neo4jMigrationNode = {
         version: '1.0.0',
         description: 'description',
         checksum: 'checksum',
@@ -177,7 +177,7 @@ RETURN newMigration;`;
         source: 'source',
       };
 
-      const baselineNode: Node<Neo4jMigration> = {
+      const baselineNode: Node<Neo4jMigrationNode> = {
         identity: 'base',
         properties: migrationNode,
         labels: [MigrationLabel],
