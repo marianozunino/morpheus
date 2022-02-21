@@ -1,8 +1,9 @@
 export type Neo4jMigration = {
-  id: string;
-  name: string;
+  version: string;
+  description: string;
   checksum: string;
-  fileName: string;
+  source: string;
+  type: 'CYPHER';
 };
 
 export const MigrationLabel = '__Neo4jMigration' as const;

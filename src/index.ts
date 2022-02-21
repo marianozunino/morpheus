@@ -26,7 +26,7 @@ program
   .description('creates a new migration file')
   .argument('<string>', 'migration base name')
   .action((fileName: string) => {
-    executionWrapper(() => generateMigration(fileName));
+    void asyncExecutionWrapper(async () => generateMigration(fileName));
   });
 
 program

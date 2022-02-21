@@ -1,15 +1,16 @@
 import { Neo4j } from './neo4j';
 import { Repository } from './repository';
-import { Neo4jMigration } from './types';
+import { BASELINE, Neo4jMigration } from './types';
 import {
   generateChecksum,
-  getFileContentAndId,
+  getFileContentAndVersion,
   getFileNamesFromMigrationsFolder,
-  getMigrationName,
+  getMigrationDescription,
+  splitFileContentIntoStatements,
 } from './utils';
 
 export class Migrator {
-  private latestMigrationId: string;
+  private latestMigrationVersion: string;
   private repository: Repository;
 
   public async migrate() {
@@ -29,26 +30,35 @@ export class Migrator {
   }
 
   private async prepareAndMigrateFile(fileName: string): Promise<void> {
-    const { migrationId, fileContent } = getFileContentAndId(fileName);
-    const migrationName = getMigrationName(fileName);
-    const migrationNode = this.buildNeo4jMigrationNode(
-      migrationId,
-      fileName,
-      fileContent,
-      migrationName,
-    );
+    const { version, fileContent } = getFileContentAndVersion(fileName);
+    const description = getMigrationDescription(fileName);
+    const statements = splitFileContentIntoStatements(fileContent);
 
-    const statements = this.getFileStatements(fileContent);
+    console.log(`Executing migration: ${description}`);
+    const trx = this.repository.getTransaction();
+    const startTime = new Date().getTime();
+    await this.repository.executeQueries(statements, trx);
+    const endTime = new Date().getTime();
+    const duration = endTime - startTime;
 
-    const migrationNodeQuery = this.repository.buildMigrationQuery(
+    const migrationNode: Neo4jMigration = {
+      version,
+      description,
+      checksum: generateChecksum(statements),
+      source: fileName,
+      type: 'CYPHER',
+    };
+
+    const migrationQuery = this.repository.buildMigrationQuery(
       migrationNode,
-      this.latestMigrationId,
+      this.latestMigrationVersion,
+      duration,
     );
-    statements.unshift(migrationNodeQuery);
 
-    console.log(`Executing migration: ${migrationName}`);
-    await this.repository.executeQueries(statements);
-    this.latestMigrationId = migrationId;
+    await this.repository.executeQuery(migrationQuery, trx);
+    await trx.commit();
+
+    this.latestMigrationVersion = version;
   }
 
   private async initializeRepository() {
@@ -56,50 +66,32 @@ export class Migrator {
     this.repository = new Repository(connection);
   }
 
-  private getFileStatements(fileContent: string): string[] {
-    return fileContent
-      .split(';')
-      .filter((statement) => statement.trim() !== '');
-  }
-
-  private buildNeo4jMigrationNode(
-    migrationId: string,
-    fileName: string,
-    fileContent: string,
-    name: string,
-  ): Neo4jMigration {
-    const checksum = generateChecksum(fileContent);
-    return {
-      id: migrationId,
-      name,
-      checksum,
-      fileName,
-    };
-  }
-
   private async getCandidateMigrations(): Promise<string[]> {
     const fileNames = await getFileNamesFromMigrationsFolder();
-    const candidateMigrations = fileNames.filter(
-      (fileName) =>
-        fileName.split('_')[0] > this.latestMigrationId &&
-        fileName.endsWith('.cypher'),
-    );
+
+    const candidateMigrations = fileNames.filter((fileName) => {
+      const version = getFileContentAndVersion(fileName).version;
+      return (
+        this.latestMigrationVersion === BASELINE ||
+        version > this.latestMigrationVersion
+      );
+    });
+
     return candidateMigrations;
   }
 
   private async verifyChecksumOfOldMigrations(): Promise<void> {
-    const migrations = await this.repository.getPreviousMigrations(
-      this.latestMigrationId,
-    );
+    const migrations = await this.repository.getPreviousMigrations();
     for (const row of migrations) {
-      const { fileName, checksum } = row;
+      const { source: fileName, checksum } = row;
       this.verifyMigrationChecksum(fileName, checksum);
     }
   }
 
   private verifyMigrationChecksum(fileName: string, previousChecksum: string) {
-    const { fileContent } = getFileContentAndId(fileName);
-    const checksum = generateChecksum(fileContent);
+    const { fileContent } = getFileContentAndVersion(fileName);
+    const statements = splitFileContentIntoStatements(fileContent);
+    const checksum = generateChecksum(statements);
     if (previousChecksum !== checksum) {
       console.error(
         `ERROR: the checksum of ${fileName} does not match the checksum in the database`,
@@ -107,10 +99,9 @@ export class Migrator {
       process.exit(1);
     }
   }
-
   private async getLatestMigration(): Promise<void> {
-    const { id } = await this.repository.getLatestMigration();
-    this.latestMigrationId = id;
+    const { version } = await this.repository.getLatestMigration();
+    this.latestMigrationVersion = version;
   }
 
   private async assertBaseNodeExists(): Promise<void> {

@@ -9,7 +9,7 @@ export class Repository {
     const [baseNode] = await this.connection
       .query()
       .matchNode('base', MigrationLabel)
-      .where({ 'base.id': 0 })
+      .where({ 'base.version': BASELINE })
       .return('base')
       .run<Node<Neo4jMigration>>();
     return baseNode?.base?.properties;
@@ -17,14 +17,12 @@ export class Repository {
 
   public async executeQueries(
     queries: string[],
-    useTransaction = true,
+    trx?: Transaction,
   ): Promise<void> {
-    if (useTransaction) {
-      const trx = this.getTransaction();
+    if (trx) {
       for (const statement of queries) {
         await trx.run(statement);
       }
-      await trx.commit();
     } else {
       for (const statement of queries) {
         await this.connection.raw(statement).run();
@@ -36,70 +34,69 @@ export class Repository {
     const [latestMigration] = await this.connection
       .query()
       .matchNode('migration', MigrationLabel)
+      .raw(`WHERE NOT (migration)-[:MIGRATED_TO]->(:${MigrationLabel})`)
       .return('migration')
-      .orderBy('toInteger(migration.id)', 'DESC')
-      .limit(1)
+      .raw(`LIMIT 1`)
       .run<Node<Neo4jMigration>>();
+
     return latestMigration?.migration?.properties;
   }
 
   public async createConstraints(): Promise<void> {
     await this.executeQueries([
-      `CREATE CONSTRAINT unique_id_${MigrationLabel} IF NOT exists ON (p:${MigrationLabel}) ASSERT p.id IS UNIQUE;`,
-      `CREATE INDEX idx_id_${MigrationLabel} IF NOT exists FOR (p:${MigrationLabel}) ON (p.id);`,
+      `CREATE CONSTRAINT unique_version_${MigrationLabel} IF NOT exists ON (m:${MigrationLabel}) ASSERT m.version IS UNIQUE`,
+      `CREATE INDEX idx_version_${MigrationLabel} IF NOT exists FOR (m:${MigrationLabel}) ON (m.version)`,
     ]);
   }
 
   public async createBaseNode(): Promise<void> {
     await this.connection
       .query()
-      .createNode('base', MigrationLabel, { id: 0, name: BASELINE })
+      .createNode('base', MigrationLabel, { version: BASELINE })
       .run();
   }
 
-  public async getPreviousMigrations(
-    migrationId: string,
-  ): Promise<Neo4jMigration[]> {
+  public async getPreviousMigrations(): Promise<Neo4jMigration[]> {
     const rows = await this.connection
       .query()
       .raw(
-        `MATCH (migration:__Neo4jMigration)
-  WHERE toInteger(migration.id) <= toInteger(${migrationId})
-  AND migration.checksum IS NOT NULL
-  RETURN migration`,
+        `MATCH (b:${MigrationLabel} {version:"${BASELINE}"}) - [r:MIGRATED_TO*] -> (l:${MigrationLabel})
+         WHERE NOT (l)-[:MIGRATED_TO]->(:${MigrationLabel})
+         RETURN DISTINCT l`,
       )
       .run<Node<Neo4jMigration>>();
-    return rows.map((row) => row.migration.properties);
+
+    return rows.map((row) => row.l.properties);
   }
 
-  public async executeQuery(
-    query: string,
-    useTransaction = false,
-  ): Promise<void> {
-    return this.executeQueries([query], useTransaction);
+  public async executeQuery(query: string, trx?: Transaction): Promise<void> {
+    return this.executeQueries([query], trx);
   }
 
   public buildMigrationQuery(
     neo4jMigration: Neo4jMigration,
-    fromId: string,
+    fromVersion: string,
+    duration: number,
   ): string {
     return this.connection
       .query()
       .matchNode('migration', MigrationLabel)
-      .where({ 'migration.id': fromId })
+      .where({ 'migration.version': fromVersion })
       .with('migration')
       .create([
         node('migration'),
-        relation('out', ':MIGRATED_TO', {
-          date: new Date().getTime().toString(),
-        }),
+        relation('out', 'r', 'MIGRATED_TO'),
         node('newMigration', MigrationLabel, neo4jMigration),
       ])
+      .raw(
+        'SET r.at = datetime({timezone: "UTC"}), r.in = duration({milliseconds: $duration})',
+        { duration },
+      )
       .return('newMigration')
       .interpolate();
   }
 
-  private getTransaction(): Transaction {
+  public getTransaction(): Transaction {
     return this.connection.session().beginTransaction();
   }
 }

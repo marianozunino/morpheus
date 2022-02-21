@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { createHash } from 'crypto';
+import { crc32 } from 'crc';
 import {
   existsSync,
   mkdirSync,
@@ -9,37 +9,46 @@ import {
 } from 'fs';
 import { resolve } from 'path';
 
-/* istanbul ignore next */
-export function generateChecksum(fileContent: string): string {
-  return createHash('md5').update(fileContent, 'utf8').digest('hex');
+export function generateChecksum(statements: string[]): string {
+  const crcValue = statements.reduce((acc: number, statement) => {
+    return crc32(statement, acc);
+  }, undefined);
+
+  return crcValue.toString();
 }
 
-// filename format: <timestamp>_<name>.cypher
+// filename format: V<number>_<name>.cypher
 /* istanbul ignore next */
 export async function getFileNamesFromMigrationsFolder(): Promise<string[]> {
   const configPath = resolve(process.cwd(), 'neo4j/migrations');
   return readdirSync(configPath);
 }
 
-export function getMigrationName(fileName: string): string {
-  const result = fileName.match(/^(\d{13})_(\w+)\.cypher$/) as string[];
-  assert(result && result.length === 3, 'Invalid file name');
-  return result[2];
+export function getMigrationDescription(fileName: string): string {
+  const result = fileName.match(
+    /^V(\d+(?:_\d+)*|\d+(?:\.\d+)*)__([\w ]+)(?:\.cypher)$/,
+  );
+  assert(result, 'Invalid file name');
+  return result[2].replace(/_/g, ' ').trim();
 }
 
-export function getFileContentAndId(fileName: string): {
-  migrationId: string;
+export function getFileContentAndVersion(fileName: string): {
+  version: string;
   fileContent: string;
 } {
-  const result = fileName.match(/^(\d{13})_\w+\.cypher$/) as string[];
+  const result = fileName.match(
+    /^V(\d+(?:_\d+)*|\d+(?:\.\d+)*)__([\w ]+)(?:\.cypher)$/,
+  );
+
   assert(result, 'Invalid file name');
-  const [, migrationId] = result;
+
+  const version = result[1].replace(/_/g, '.');
   const filePath = resolve(process.cwd(), 'neo4j/migrations', fileName);
 
   assert(existsSync(filePath), `Migration ${fileName} not found`);
   const fileContent = readFileSync(filePath, 'utf8');
 
-  return { migrationId, fileContent };
+  return { version, fileContent };
 }
 
 export function createMigrationsFolder(): void {
@@ -65,15 +74,30 @@ export function createMorpheusFile(): void {
   console.log(`Morpheus file created: ${filePath}`);
 }
 
-export function generateMigration(fileName: string) {
-  // create migration file
-  const filePrefix = new Date().getTime();
-  const fileNameWithPrefix = `${filePrefix}_${fileName}.cypher`;
+export async function generateMigrationName(): Promise<string> {
+  const fileNames = await getFileNamesFromMigrationsFolder();
+  const latestVersion = fileNames.reduce((acc, fileName) => {
+    const { version } = getFileContentAndVersion(fileName);
+    return version > acc ? version : acc;
+  }, '0.0.0');
+
+  // increment first digit
+  const latestVersionArray = latestVersion.split('.').map(Number)[0];
+  return `${latestVersionArray + 1}_0_0`;
+}
+
+export async function generateMigration(fileName: string) {
+  const newVersion = await generateMigrationName();
+  const fileNameWithPrefix = `V${newVersion}__${fileName}.cypher`;
   const filePath = `./neo4j/migrations/${fileNameWithPrefix}`;
-  const fileContent = `CREATE (agent:\`007\`) RETURN agent;
-    UNWIND RANGE(1,6) AS i
-    WITH i CREATE (n:OtherAgents {idx: '00' + i})
-    RETURN n;`;
+  const fileContent = `CREATE (agent:\`007\`) RETURN agent;`;
   writeFileSync(filePath, fileContent);
   console.log(`Migration file created: ${filePath}`);
+}
+
+export function splitFileContentIntoStatements(fileContent: string): string[] {
+  return fileContent
+    .split(/;(:?\r?\n|\r)/)
+    .map((statement) => statement.trim().replace(/;$/, ''))
+    .filter((statement) => statement !== '');
 }
