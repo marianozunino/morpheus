@@ -7,6 +7,9 @@ import {
   generateMigration,
   createMigrationsFolder,
   createMorpheusFile,
+  repositoryFactory,
+  asyncExecutionWrapper,
+  executionWrapper,
 } from './utils';
 
 const program = new Command();
@@ -34,34 +37,13 @@ program
   .command('migrate')
   .description('executes migrations')
   .action(() => {
-    void asyncExecutionWrapper(async () => await new Migrator().migrate());
+    void asyncExecutionWrapper(async () => {
+      const repository = await repositoryFactory();
+      await new Migrator(repository).migrate();
+    });
   });
 
 program.parse();
-
-async function asyncExecutionWrapper(
-  ...executables: (() => Promise<unknown>)[]
-): Promise<void> {
-  try {
-    for (const executable of executables) {
-      await executable();
-    }
-  } catch (error) {
-    console.error(error.message);
-  } finally {
-    process.exit(0);
-  }
-}
-
-function executionWrapper(...executables: CallableFunction[]): void {
-  try {
-    executables.forEach((executable) => executable());
-  } catch (error) {
-    console.error(error.message);
-  } finally {
-    process.exit(0);
-  }
-}
 
 process.on('exit', () => {
   Neo4j.close().catch(console.error);
