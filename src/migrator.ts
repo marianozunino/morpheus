@@ -1,4 +1,3 @@
-import { Neo4j } from './neo4j';
 import { Repository } from './repository';
 import { BASELINE, Neo4jMigrationNode } from './types';
 import {
@@ -11,10 +10,10 @@ import {
 
 export class Migrator {
   private latestMigrationVersion: string;
-  private repository: Repository;
+
+  constructor(private readonly repository: Repository) {}
 
   public async migrate() {
-    await this.initializeRepository();
     await this.assertBaseNodeExists();
     await this.getLatestMigration();
     await this.verifyChecksumOfOldMigrations();
@@ -59,11 +58,6 @@ export class Migrator {
     await this.repository.executeQuery(migrationQuery);
 
     this.latestMigrationVersion = version;
-  }
-
-  private async initializeRepository() {
-    const connection = await Neo4j.getConnection();
-    this.repository = new Repository(connection);
   }
 
   private async getCandidateMigrations(): Promise<string[]> {

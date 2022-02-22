@@ -8,6 +8,8 @@ import {
   writeFileSync,
 } from 'fs';
 import { resolve } from 'path';
+import { Neo4j } from './neo4j';
+import { Repository } from './repository';
 
 export function generateChecksum(statements: string[]): string {
   const crcValue = statements.reduce((acc: number, statement) => {
@@ -100,4 +102,34 @@ export function splitFileContentIntoStatements(fileContent: string): string[] {
     .split(/;(:?\r?\n|\r)/)
     .map((statement) => statement.trim().replace(/;$/, ''))
     .filter((statement) => statement !== '');
+}
+
+export async function repositoryFactory(): Promise<Repository> {
+  const connection = await Neo4j.getConnection();
+  const repository = new Repository(connection);
+  return repository;
+}
+
+export async function asyncExecutionWrapper(
+  ...executables: (() => Promise<unknown>)[]
+): Promise<void> {
+  try {
+    for (const executable of executables) {
+      await executable();
+    }
+  } catch (error) {
+    console.error(error.message);
+  } finally {
+    process.exit(0);
+  }
+}
+
+export function executionWrapper(...executables: CallableFunction[]): void {
+  try {
+    executables.forEach((executable) => executable());
+  } catch (error) {
+    console.error(error.message);
+  } finally {
+    process.exit(0);
+  }
 }
