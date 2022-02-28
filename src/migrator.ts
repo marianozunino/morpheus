@@ -40,6 +40,7 @@ export class Migrator {
     await this.repository.executeQueries(statements, trx);
     const endTime = new Date().getTime();
     const duration = endTime - startTime;
+    await trx.commit();
 
     const migrationNode: Neo4jMigrationNode = {
       version,
@@ -55,8 +56,7 @@ export class Migrator {
       duration,
     );
 
-    await this.repository.executeQuery(migrationQuery, trx);
-    await trx.commit();
+    await this.repository.executeQuery(migrationQuery);
 
     this.latestMigrationVersion = version;
   }

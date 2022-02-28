@@ -93,7 +93,8 @@ export class Repository {
         { duration },
       )
       .return('newMigration')
-      .interpolate();
+      .interpolate()
+      .replace(/;$/, '');
   }
 
   public getTransaction(): Transaction {

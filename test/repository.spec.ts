@@ -51,7 +51,7 @@ WHERE migration.version = '1640995200000'
 WITH migration
 CREATE (migration)-[r:MIGRATED_TO]->(newMigration:__Neo4jMigration { version: '1.0.0', description: 'description', checksum: 'checksum', type: 'CYPHER', source: 'source' })
 SET r.at = datetime({timezone: "UTC"}), r.in = duration({milliseconds: 1000})
-RETURN newMigration;`;
+RETURN newMigration`;
 
       const query = repository.buildMigrationQuery(
         migrationNode,
