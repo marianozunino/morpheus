@@ -1,10 +1,16 @@
 import { Connection, Node } from 'cypher-query-builder';
 import { Repository } from '../src/repository';
-import { BASELINE, MigrationLabel, Neo4jMigrationNode } from '../src/types';
+import {
+  BASELINE,
+  MigrationLabel,
+  Neo4jMigrationNode,
+  Neo4jMigrationRelation,
+} from '../src/types';
 
 function buildQueryBuilder(override?: Record<string, jest.Mock>): any {
   const queryBuilder = {
     matchNode: jest.fn().mockReturnThis(),
+    match: jest.fn().mockReturnThis(),
     return: jest.fn().mockReturnThis(),
     raw: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
@@ -317,6 +323,59 @@ RETURN newMigration`;
       const trx = repository.getTransaction();
       expect(sessionMock.beginTransaction).toHaveBeenCalled();
       expect(trx).toBeDefined();
+    });
+  });
+
+  describe('getMigrationInfo', () => {
+    it('should return migrations', async () => {
+      const migrationNode: Neo4jMigrationNode = {
+        version: '1.0.0',
+        description: 'description',
+        checksum: 'checksum',
+        type: 'CYPHER',
+        source: 'source',
+      };
+
+      const relationNode: Neo4jMigrationRelation = {
+        at: {
+          day: 1,
+          month: 1,
+          year: 1970,
+          hour: 0,
+          minute: 0,
+          second: 0,
+          nanosecond: 0,
+          timeZoneId: 'UTC',
+          timeZoneOffsetSeconds: '',
+        },
+        in: {
+          days: 1,
+          months: 0,
+          nanoseconds: 0,
+          seconds: 0,
+        },
+      };
+
+      const baselineNode: Node<Neo4jMigrationNode> = {
+        identity: 'migration',
+        properties: migrationNode,
+        labels: [MigrationLabel],
+      };
+
+      const queryBuilder: any = buildQueryBuilder({
+        run: jest.fn().mockImplementationOnce(() => {
+          return Promise.resolve([
+            { migration: baselineNode, r: { properties: relationNode } },
+          ]);
+        }),
+      });
+      jest
+        .spyOn(connectionMock, 'query')
+        .mockImplementationOnce(() => queryBuilder.query());
+
+      const info = await repository.getMigrationInfo();
+      expect(info).toBeDefined();
+      expect(info.length).toBe(1);
     });
   });
 });

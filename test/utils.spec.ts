@@ -11,8 +11,20 @@ import {
   getFileContentAndVersion,
   getMigrationDescription,
   splitFileContentIntoStatements,
+  executionWrapper,
+  asyncExecutionWrapper,
+  repositoryFactory,
 } from '../src/utils';
 import { crc32 } from 'crc';
+import { Repository } from '../src/repository';
+
+jest.mock('../src/neo4j', () => {
+  return {
+    Neo4j: {
+      getConnection: () => {},
+    },
+  };
+});
 
 describe('utils', () => {
   beforeAll(() => {
@@ -184,6 +196,56 @@ describe('utils', () => {
       await generateMigration('migration_name_1');
       const version = await generateMigrationVersion();
       expect(version).toBe('2_0_0');
+    });
+  });
+
+  describe('asyncExecutionWrapper', () => {
+    it('should execute a function', async () => {
+      jest.spyOn(process, 'exit').mockImplementation();
+      const spy = jest.fn();
+      await asyncExecutionWrapper(spy);
+      expect(spy).toHaveBeenCalled();
+      expect(process.exit).toHaveBeenCalled();
+    });
+    it('should print error if function throws an error', async () => {
+      jest.spyOn(process, 'exit').mockImplementation();
+      jest.spyOn(console, 'error');
+      const spy = jest.fn().mockImplementation(() => {
+        throw new Error('error');
+      });
+      await asyncExecutionWrapper(spy);
+      expect(spy).toHaveBeenCalled();
+      expect(process.exit).toHaveBeenCalled();
+      expect(console.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('executionWrapper', () => {
+    it('should execute a function', () => {
+      jest.spyOn(process, 'exit').mockImplementation();
+      const spy = jest.fn();
+      executionWrapper(spy);
+      expect(spy).toHaveBeenCalled();
+      expect(process.exit).toHaveBeenCalled();
+    });
+
+    it('should print error if function throws an error', () => {
+      jest.spyOn(process, 'exit').mockImplementation();
+      jest.spyOn(console, 'error');
+      const spy = jest.fn().mockImplementation(() => {
+        throw new Error('error');
+      });
+      executionWrapper(spy);
+      expect(spy).toHaveBeenCalled();
+      expect(process.exit).toHaveBeenCalled();
+      expect(console.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('repositoryFactory', () => {
+    it('should return a repository', async () => {
+      const repository = await repositoryFactory();
+      expect(repository).toBeInstanceOf(Repository);
     });
   });
 });

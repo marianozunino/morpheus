@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /* istanbul ignore file */
 import { Command } from 'commander';
+import { Info } from './info';
 import { Migrator } from './migrator';
 import { Neo4j } from './neo4j';
 import {
@@ -23,6 +24,16 @@ program
   .description('create a morpheus file')
   .action(() => {
     executionWrapper(createMigrationsFolder, createMorpheusFile);
+  });
+
+program
+  .command('info')
+  .description('show current status')
+  .action(() => {
+    void asyncExecutionWrapper(async () => {
+      const repository = await repositoryFactory();
+      await new Info(repository).getInfo();
+    });
   });
 
 program

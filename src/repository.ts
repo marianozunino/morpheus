@@ -1,6 +1,12 @@
 import { Connection, node, Node, relation } from 'cypher-query-builder';
 import { Transaction } from 'neo4j-driver-core';
-import { Neo4jMigrationNode, MigrationLabel, BASELINE } from './types';
+import {
+  Neo4jMigrationNode,
+  MigrationLabel,
+  BASELINE,
+  Neo4jMigrationRelation,
+  MigrationInfo,
+} from './types';
 
 export class Repository {
   constructor(private readonly connection: Connection) {}
@@ -29,7 +35,6 @@ export class Repository {
       }
     }
   }
-
   public async getLatestMigration(): Promise<Neo4jMigrationNode> {
     const [latestMigration] = await this.connection
       .query()
@@ -95,6 +100,23 @@ export class Repository {
       .return('newMigration')
       .interpolate()
       .replace(/;$/, '');
+  }
+
+  public async getMigrationInfo(): Promise<MigrationInfo[]> {
+    const nodes = await this.connection
+      .query()
+      .match([
+        node(MigrationLabel),
+        relation('out', 'r', 'MIGRATED_TO'),
+        node('migration', MigrationLabel),
+      ])
+      .return(['migration', 'r'])
+      .run<Node<Neo4jMigrationNode & Neo4jMigrationRelation>>();
+
+    return nodes.map((node) => ({
+      node: node.migration.properties,
+      relation: node.r.properties,
+    }));
   }
 
   public getTransaction(): Transaction {

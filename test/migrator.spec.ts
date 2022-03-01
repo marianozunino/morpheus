@@ -1,18 +1,30 @@
 import * as config from '../src/config';
 import * as utils from '../src/utils';
-import { RepositoryMock } from './__mocks__/repository';
 import { Migrator } from '../src/migrator';
 import { BASELINE, Neo4jMigrationNode } from '../src/types';
 import { crc32 } from 'crc';
+import { Repository } from '../src/repository';
+import { Connection } from 'cypher-query-builder';
 const mockUtils = utils;
 
 jest.mock('../src/neo4j', () => {
   return {
     Neo4j: {
-      getConnection: () => {},
+      getConnection: () => jest.fn(),
     },
   };
 });
+
+jest.mock('../src/repository');
+jest.mock('cypher-query-builder');
+const MockedRepository = Repository as jest.MockedClass<typeof Repository>;
+const MockedConnection = Connection as jest.MockedClass<typeof Connection>;
+
+const mockedConnection = new MockedConnection(null, null);
+const mockedRepository = new MockedRepository(mockedConnection);
+function migratorBuilder() {
+  return new Migrator(mockedRepository);
+}
 
 function generateNeo4jBaseline(
   override?: Partial<Neo4jMigrationNode>,
@@ -37,21 +49,12 @@ jest.spyOn(config, 'readMorpheusConfig').mockImplementationOnce(() => ({
 
 jest.spyOn(console, 'log');
 
-const repository = new RepositoryMock();
-function migratorBuilder(): Migrator {
-  return new Migrator(repository);
-}
-
 describe('migrator', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(repository, 'getTransaction');
-    jest.spyOn(repository, 'executeQueries');
-    jest.spyOn(repository, 'executeQuery');
-    jest.spyOn(repository, 'buildMigrationQuery');
   });
   it('should be defined', () => {
-    const migrator = new Migrator(repository);
+    const migrator = new Migrator(new MockedRepository(null));
     expect(migrator).toBeDefined();
   });
   describe('migrate', () => {
@@ -59,33 +62,29 @@ describe('migrator', () => {
       mockUtils.getFileNamesFromMigrationsFolder = jest
         .fn()
         .mockReturnValue(Promise.resolve([]));
-
-      jest
-        .spyOn(repository, 'getLatestMigration')
-        .mockReturnValueOnce(Promise.resolve(generateNeo4jBaseline()));
-
-      jest.spyOn(repository, 'createBaseNode').mockReturnValueOnce(undefined);
-      jest
-        .spyOn(repository, 'createConstraints')
-        .mockReturnValueOnce(undefined);
-
-      jest
-        .spyOn(repository, 'getPreviousMigrations')
-        .mockReturnValueOnce(Promise.resolve([]));
-
-      jest
-        .spyOn(repository, 'fetchBaselineNode')
-        .mockImplementationOnce(() => undefined);
+      mockedRepository.getLatestMigration = jest
+        .fn()
+        .mockReturnValueOnce(generateNeo4jBaseline());
+      mockedRepository.createBaseNode = jest
+        .fn()
+        .mockResolvedValueOnce(undefined);
+      mockedRepository.createConstraints = jest
+        .fn()
+        .mockResolvedValueOnce(undefined);
+      mockedRepository.getPreviousMigrations = jest
+        .fn()
+        .mockResolvedValueOnce([]);
+      mockedRepository.fetchBaselineNode = jest
+        .fn()
+        .mockResolvedValueOnce(undefined);
 
       const migrator = migratorBuilder();
       await migrator.migrate();
-
-      expect(repository.createBaseNode).toHaveBeenCalled();
-      expect(repository.createConstraints).toHaveBeenCalled();
-      expect(repository.createBaseNode).toHaveBeenCalledTimes(1);
-      expect(repository.createConstraints).toHaveBeenCalledTimes(1);
+      expect(mockedRepository.createBaseNode).toHaveBeenCalled();
+      expect(mockedRepository.createConstraints).toHaveBeenCalled();
+      expect(mockedRepository.createBaseNode).toHaveBeenCalledTimes(1);
+      expect(mockedRepository.createConstraints).toHaveBeenCalledTimes(1);
     });
-
     describe('when migrations directory is empty', () => {
       beforeEach(() => {
         mockUtils.getFileNamesFromMigrationsFolder = jest
@@ -97,23 +96,20 @@ describe('migrator', () => {
           .fn()
           .mockReturnValue(Promise.resolve([]));
 
-        jest
-          .spyOn(repository, 'getPreviousMigrations')
-          .mockReturnValueOnce(Promise.resolve([]));
-
-        jest
-          .spyOn(repository, 'getLatestMigration')
-          .mockReturnValueOnce(Promise.resolve(generateNeo4jBaseline()));
-
-        jest
-          .spyOn(repository, 'fetchBaselineNode')
-          .mockReturnValueOnce(Promise.resolve(generateNeo4jBaseline()));
+        mockedRepository.getLatestMigration = jest
+          .fn()
+          .mockReturnValueOnce(generateNeo4jBaseline());
+        mockedRepository.getPreviousMigrations = jest
+          .fn()
+          .mockResolvedValueOnce([]);
+        mockedRepository.fetchBaselineNode = jest
+          .fn()
+          .mockResolvedValueOnce(generateNeo4jBaseline());
 
         const migrator = migratorBuilder();
         await migrator.migrate();
-
-        expect(repository.getPreviousMigrations).toHaveBeenCalled();
-        expect(repository.getPreviousMigrations).toHaveBeenCalled();
+        expect(mockedRepository.getPreviousMigrations).toHaveBeenCalled();
+        expect(mockedRepository.getPreviousMigrations).toHaveBeenCalled();
         expect(console.log).toHaveBeenCalled();
         expect(console.log).toHaveBeenCalledWith('Database is up to date');
       });
@@ -129,24 +125,22 @@ describe('migrator', () => {
             .fn()
             .mockReturnValue(Promise.resolve(['wrong_name']));
 
-          jest
-            .spyOn(repository, 'getPreviousMigrations')
-            .mockReturnValueOnce(Promise.resolve([]));
-
-          jest
-            .spyOn(repository, 'getLatestMigration')
-            .mockReturnValueOnce(Promise.resolve(generateNeo4jBaseline()));
-
-          jest
-            .spyOn(repository, 'fetchBaselineNode')
-            .mockReturnValueOnce(Promise.resolve(generateNeo4jBaseline()));
+          mockedRepository.getLatestMigration = jest
+            .fn()
+            .mockReturnValueOnce(generateNeo4jBaseline());
+          mockedRepository.getPreviousMigrations = jest
+            .fn()
+            .mockResolvedValueOnce([]);
+          mockedRepository.fetchBaselineNode = jest
+            .fn()
+            .mockResolvedValueOnce(generateNeo4jBaseline());
 
           const migrator = migratorBuilder();
           await expect(
             migrator.migrate(),
           ).rejects.toThrowErrorMatchingInlineSnapshot(`"Invalid file name"`);
         });
-        it.only('should execute old and new migrations', async () => {
+        it('should execute old and new migrations', async () => {
           mockUtils.getFileContentAndVersion = jest.fn().mockReturnValue({
             fileContent: 'content;\n',
             version: '1.0.0',
@@ -155,33 +149,32 @@ describe('migrator', () => {
             .fn()
             .mockReturnValue(Promise.resolve(['V1_0_0__migrationName.cypher']));
 
-          jest
-            .spyOn(repository, 'getPreviousMigrations')
-            .mockReturnValueOnce(Promise.resolve([]));
+          mockedRepository.getLatestMigration = jest
+            .fn()
+            .mockReturnValueOnce(generateNeo4jBaseline());
+          mockedRepository.getPreviousMigrations = jest
+            .fn()
+            .mockResolvedValueOnce([]);
+          mockedRepository.fetchBaselineNode = jest
+            .fn()
+            .mockResolvedValueOnce(generateNeo4jBaseline());
 
-          jest
-            .spyOn(repository, 'getLatestMigration')
-            .mockReturnValueOnce(Promise.resolve(generateNeo4jBaseline()));
-
-          jest
-            .spyOn(repository, 'fetchBaselineNode')
-            .mockReturnValueOnce(Promise.resolve(generateNeo4jBaseline()));
-
-          // Repository.prototype.executeQueries = jest.fn();
-          // Repository.prototype.executeQuery = jest.fn();
+          mockedRepository.getTransaction = jest.fn().mockReturnValue({
+            run: jest.fn(),
+            commit: jest.fn(),
+          });
 
           const migrator = migratorBuilder();
           await migrator.migrate();
-
           expect(console.log).toHaveBeenCalled();
           expect(console.log).toHaveBeenCalledWith(
             'Executing migration: migrationName',
           );
-          expect(repository.getTransaction).toHaveBeenCalled();
-          expect(repository.executeQueries).toHaveBeenCalled();
-          expect(repository.executeQuery).toHaveBeenCalled();
-          expect(repository.buildMigrationQuery).toHaveBeenCalled();
-          expect(repository.getTransaction).toHaveBeenCalled();
+          expect(mockedRepository.getTransaction).toHaveBeenCalled();
+          expect(mockedRepository.executeQueries).toHaveBeenCalled();
+          expect(mockedRepository.executeQuery).toHaveBeenCalled();
+          expect(mockedRepository.buildMigrationQuery).toHaveBeenCalled();
+          expect(mockedRepository.getTransaction).toHaveBeenCalled();
         });
         it('should exit if checksums of old migrations are invalid', async () => {
           jest.spyOn(process, 'exit').mockImplementation();
@@ -193,32 +186,27 @@ describe('migrator', () => {
             .fn()
             .mockReturnValue(Promise.resolve(['V1_0_0__migrationName.cypher']));
 
-          jest
-            .spyOn(repository, 'getPreviousMigrations')
-            .mockReturnValueOnce(
-              Promise.resolve([generateNeo4jBaseline({ version: '1.0.0' })]),
-            );
-
-          jest
-            .spyOn(repository, 'getLatestMigration')
-            .mockReturnValueOnce(Promise.resolve(generateNeo4jBaseline()));
-
-          jest
-            .spyOn(repository, 'fetchBaselineNode')
-            .mockReturnValueOnce(Promise.resolve(generateNeo4jBaseline()));
+          mockedRepository.getPreviousMigrations = jest
+            .fn()
+            .mockReturnValueOnce([generateNeo4jBaseline({ version: '1.0.0' })]);
+          mockedRepository.getLatestMigration = jest
+            .fn()
+            .mockReturnValueOnce(generateNeo4jBaseline());
+          mockedRepository.fetchBaselineNode = jest
+            .fn()
+            .mockResolvedValueOnce(generateNeo4jBaseline());
 
           const migrator = migratorBuilder();
           await migrator.migrate();
-
           expect(console.log).toHaveBeenCalled();
           expect(console.log).toHaveBeenCalledWith(
             'Executing migration: migrationName',
           );
-          expect(repository.getTransaction).toHaveBeenCalled();
-          expect(repository.executeQueries).toHaveBeenCalled();
-          expect(repository.executeQuery).toHaveBeenCalled();
-          expect(repository.buildMigrationQuery).toHaveBeenCalled();
-          expect(repository.getTransaction).toHaveBeenCalled();
+          expect(mockedRepository.getTransaction).toHaveBeenCalled();
+          expect(mockedRepository.executeQueries).toHaveBeenCalled();
+          expect(mockedRepository.executeQuery).toHaveBeenCalled();
+          expect(mockedRepository.buildMigrationQuery).toHaveBeenCalled();
+          expect(mockedRepository.getTransaction).toHaveBeenCalled();
           expect(process.exit).toHaveBeenCalledWith(1);
         });
       });
@@ -236,32 +224,28 @@ describe('migrator', () => {
             .fn()
             .mockReturnValue(Promise.resolve(['V1_0_0__migrationName.cypher']));
 
-          jest.spyOn(repository, 'getPreviousMigrations').mockReturnValueOnce(
-            Promise.resolve([
+          mockedRepository.getPreviousMigrations = jest
+            .fn()
+            .mockReturnValueOnce([
               generateNeo4jBaseline({
                 version: '1.0.0',
                 checksum: crc32('content').toString(),
               }),
-            ]),
+            ]);
+          mockedRepository.getLatestMigration = jest.fn().mockReturnValueOnce(
+            generateNeo4jBaseline({
+              version: '1.0.0',
+              checksum: crc32('content').toString(),
+            }),
           );
+          mockedRepository.fetchBaselineNode = jest
+            .fn()
+            .mockResolvedValueOnce(generateNeo4jBaseline());
 
-          jest.spyOn(repository, 'getLatestMigration').mockReturnValueOnce(
-            Promise.resolve(
-              generateNeo4jBaseline({
-                version: '1.0.0',
-                checksum: crc32('content').toString(),
-              }),
-            ),
-          );
-
-          jest
-            .spyOn(repository, 'fetchBaselineNode')
-            .mockReturnValueOnce(Promise.resolve(generateNeo4jBaseline()));
-
+          jest;
           const migrator = migratorBuilder();
           await migrator.migrate();
-
-          expect(repository.getPreviousMigrations).toHaveBeenCalled();
+          expect(mockedRepository.getPreviousMigrations).toHaveBeenCalled();
           expect(process.exit).not.toHaveBeenCalled();
         });
       });
