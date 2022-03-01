@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from 'fs';
 import { resolve } from 'path';
-import { Neo4j } from './neo4j';
+import { Neo4j, Neo4jConfig } from './neo4j';
 import { Repository } from './repository';
 
 export function generateChecksum(statements: string[]): string {

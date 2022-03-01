@@ -28,6 +28,8 @@ Add a script to your project's package.json file:
   ```   
 
 # Usage
+
+
 ### Create Migrations
 
 You can create migrations using the `morpheus` command or manually.
@@ -74,6 +76,43 @@ npm run morpheus migrate
 This will run all migrations in the `neo4j/migrations` directory.
 
 
+### NestJs Integration
+
+You can use Morpheus with the [NestJs](https://nestjs.com) framework. 
+
+Migrations will be run automatically when the application is 
+[started](https://docs.nestjs.com/fundamentals/lifecycle-events#lifecycle-events-1): 
+
+![logs](./assets/nest-logs.png) 
+
+The biggest difference is that you don't need to create a `.morpheus.json` file and you can use any name for the ENV variables.
+
+You can use the `forRoot` method as well.
+
+```ts
+import { Module } from '@nestjs/common';
+import { MorpheusModule } from 'morpheus4j/nest';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot(),
+
+    // Using forRootAsync with Dependency Injection
+    MorpheusModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        scheme: configService.get("MORPHEUS_SCHEME"),
+        host: configService.get("MORPHEUS_HOST"),
+        port: configService.get("MORPHEUS_PORT"),
+        username: configService.get("MORPHEUS_USERNAME"),
+        password: configService.get("MORPHEUS_PASSWORD"),
+      }),
+    }),
+  ],
+})
+export class AppModule {}
+```
 # How it works
 The approach is simple. Morpheus will read all migrations in the `neo4j/migrations` directory and execute them in order.
 
