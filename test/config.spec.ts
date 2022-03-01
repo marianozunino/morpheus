@@ -13,6 +13,11 @@ describe('config', () => {
         unlinkSync(configPath);
       }
       // clean env variables
+      delete process.env.MORPHEUS_SCHEME;
+      delete process.env.MORPHEUS_HOST;
+      delete process.env.MORPHEUS_PORT;
+      delete process.env.MORPHEUS_USERNAME;
+      delete process.env.MORPHEUS_PASSWORD;
       delete process.env.NEO4J_SCHEME;
       delete process.env.NEO4J_HOST;
       delete process.env.NEO4J_PORT;
@@ -117,6 +122,25 @@ describe('config', () => {
       process.env.NEO4J_PORT = '7687';
       process.env.NEO4J_USERNAME = 'neo4j';
       process.env.NEO4J_PASSWORD = 'neo4j';
+
+      const config = readMorpheusConfig();
+      expect(config).toMatchInlineSnapshot(`
+          Object {
+            "host": "localhost",
+            "password": "neo4j",
+            "port": 7687,
+            "scheme": "neo4j",
+            "username": "neo4j",
+          }
+        `);
+    });
+
+    it('should support new env variables', () => {
+      process.env.MORPHEUS_SCHEME = 'neo4j';
+      process.env.MORPHEUS_HOST = 'localhost';
+      process.env.MORPHEUS_PORT = '7687';
+      process.env.MORPHEUS_USERNAME = 'neo4j';
+      process.env.MORPHEUS_PASSWORD = 'neo4j';
 
       const config = readMorpheusConfig();
       expect(config).toMatchInlineSnapshot(`

@@ -7,11 +7,13 @@ import assert from 'assert';
 function getConfigFromEnv(): Neo4jConfig {
   console.log('Getting config from env');
   const config = {
-    scheme: process.env.NEO4J_SCHEME as Neo4jConfig['scheme'],
-    host: process.env.NEO4J_HOST,
-    port: Number(process.env.NEO4J_PORT),
-    username: process.env.NEO4J_USERNAME,
-    password: process.env.NEO4J_PASSWORD,
+    scheme:
+      (process.env.NEO4J_SCHEME as Neo4jConfig['scheme']) ||
+      (process.env.MORPHEUS_SCHEME as Neo4jConfig['scheme']),
+    host: process.env.NEO4J_HOST || process.env.MORPHEUS_HOST,
+    port: Number(process.env.NEO4J_PORT) || Number(process.env.MORPHEUS_PORT),
+    username: process.env.NEO4J_USERNAME || process.env.MORPHEUS_USERNAME,
+    password: process.env.NEO4J_PASSWORD || process.env.MORPHEUS_PASSWORD,
   };
   return config;
 }
@@ -30,7 +32,9 @@ function getConfigFromFile(): Neo4jConfig {
 }
 
 function isUsingEnv(): boolean {
-  return Object.keys(process.env).some((key) => key.startsWith('NEO4J_'));
+  return Object.keys(process.env).some(
+    (key) => key.startsWith('NEO4J_') || key.startsWith('MORPHEUS_'),
+  );
 }
 
 function validateConfig(config: Neo4jConfig): void {

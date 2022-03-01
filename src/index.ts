@@ -13,6 +13,8 @@ import {
   executionWrapper,
 } from './utils';
 
+export { Migrator, Neo4j, repositoryFactory };
+
 const program = new Command();
 
 program

@@ -22,8 +22,6 @@ export class Info {
 
   private async getAllMigrationFiles(): Promise<void> {
     const migrationFiles = await getFileNamesFromMigrationsFolder();
-    console.log(migrationFiles, '<<');
-
     this.files = migrationFiles.map((file) => {
       const { version } = getFileContentAndVersion(file);
       const description = getMigrationDescription(file);
