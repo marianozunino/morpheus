@@ -66,6 +66,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prepare": "husky install",
     "lint": "eslint src/**/*.ts --fix",
-    "semver": "semantic-release"
+    "semver": "semantic-release",
+    "morpheus": "node ./dist/index.js"
   }
 }
