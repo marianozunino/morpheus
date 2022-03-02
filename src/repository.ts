@@ -1,5 +1,5 @@
 import { Connection, node, Node, relation } from 'cypher-query-builder';
-import { Transaction } from 'neo4j-driver-core';
+import { Transaction } from 'neo4j-driver-core/types';
 import {
   Neo4jMigrationNode,
   MigrationLabel,

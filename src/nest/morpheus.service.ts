@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Connection } from 'cypher-query-builder';
-import { Driver } from 'neo4j-driver-core';
+import { Driver } from 'neo4j-driver-core/types';
 import { Config } from '../config';
 import { Migrator } from '../migrator';
 import { Repository } from '../repository';

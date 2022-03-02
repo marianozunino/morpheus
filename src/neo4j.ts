@@ -1,5 +1,5 @@
 import { Connection } from 'cypher-query-builder';
-import { Driver } from 'neo4j-driver-core';
+import { Driver } from 'neo4j-driver-core/types';
 import { Config } from './config';
 
 export type Neo4jScheme =
