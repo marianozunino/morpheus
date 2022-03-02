@@ -34,7 +34,7 @@ Add a script to your project's `package.json` file:
 
 ## Initial Configuration
 
-To run migrations, first you need to configure Morpheus. To do so, create a `.morpheus.json` file in your project root directory and create a `neo4j/migrations` directory as well.
+To run migrations, first you need to configure Morpheus. To do so, create a `.morpheus.json` file in your project root directory.
 
 > Or, you can use the `init` command:
 
@@ -50,6 +50,7 @@ MORPHEUS_HOST=localhost
 MORPHEUS_PORT=7687
 MORPHEUS_USERNAME=neo4j
 MORPHEUS_PASSWORD=neo4j
+MORPHEUS_MIGRATIONS_PATH=neo4j/migrations # default value
 ```
 
 ```env
@@ -123,6 +124,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         port: configService.get("MORPHEUS_PORT"),
         username: configService.get("MORPHEUS_USERNAME"),
         password: configService.get("MORPHEUS_PASSWORD"),
+        migrationsPath: "./neo4j/migrations", // default value
       }),
     }),
 
@@ -134,6 +136,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         port: 7687,
         username: "neo4j",
         password: "neo4j",
+        migrationsPath: "./migrations",
       }),
     }),
   ],
