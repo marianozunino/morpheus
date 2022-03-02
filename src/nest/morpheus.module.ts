@@ -5,8 +5,8 @@ import {
   ModuleMetadata,
   Provider,
 } from '@nestjs/common';
-import { MigrationService as MigrationService } from './migration.service';
-import { MorpheusModuleOptions } from './migration-service-options';
+import { MorpheusService } from './morpheus.service';
+import { MorpheusModuleOptions } from './morpheus-service-options';
 
 export interface MorpheusModuleOptionsFactory {
   createObjectionModuleOptions():
@@ -29,8 +29,8 @@ export class MorpheusModule {
   static forRoot(options: MorpheusModuleOptions): DynamicModule {
     const providers = [
       {
-        provide: MigrationService,
-        useValue: new MigrationService(options),
+        provide: MorpheusService,
+        useValue: new MorpheusService(options),
       },
     ];
 
@@ -62,7 +62,7 @@ export class MorpheusModule {
           provide: MorpheusModule,
           useFactory: async (...args: any[]) => {
             const asyncOptions = await options.useFactory(...args);
-            return new MigrationService(asyncOptions);
+            return new MorpheusService(asyncOptions);
           },
           inject: options.inject || [],
         },

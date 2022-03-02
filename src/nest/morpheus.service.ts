@@ -3,14 +3,14 @@ import { Connection } from 'cypher-query-builder';
 import { Driver } from 'neo4j-driver-core';
 import { Migrator } from '../migrator';
 import { Repository } from '../repository';
-import { MorpheusModuleOptions } from './migration-service-options';
+import { MorpheusModuleOptions } from './morpheus-service-options';
 
 type ConnectionWithDriver = Connection & { driver: Driver };
 
 @Injectable()
-export class MigrationService implements OnModuleInit {
+export class MorpheusService implements OnModuleInit {
   private connection: ConnectionWithDriver;
-  private readonly logger = new Logger(MigrationService.name);
+  private readonly logger = new Logger(MorpheusService.name);
 
   constructor(private readonly connectionOptions: MorpheusModuleOptions) {}
 

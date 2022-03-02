@@ -1,6 +1,9 @@
 [![build-deploy](https://github.com/marianozunino/morpheus/actions/workflows/build_deploy.yml/badge.svg)](https://github.com/marianozunino/morpheus/actions/workflows/build_deploy.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Coverage Status](https://coveralls.io/repos/github/marianozunino/morpheus/badge.svg)](https://coveralls.io/github/marianozunino/morpheus)
-[![a](https://img.shields.io/badge/npm-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/package/morpheus4j)
+![npm type definitions](https://img.shields.io/npm/types/morpheus4j)
+[![current-version](https://img.shields.io/badge/dynamic/json?label=current-version&query=%24.version&url=https%3A%2F%2Fraw.githubusercontent.com%2Fmarianozunino%2Fmorpheus%2Fmaster%2Fpackage.json)](https://npmjs.com/package/morpheus4j)
+<a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="25" alt="Nest Logo" /></a>
 # Morpheus
 
 
@@ -19,7 +22,7 @@ Install the latest version of Morpheus:
 npm install morpheus4j
 ```
 
-Add a script to your project's package.json file:
+Add a script to your project's `package.json` file:
 
   ```json
   "scripts": {
@@ -29,28 +32,11 @@ Add a script to your project's package.json file:
 
 # Usage
 
+## Initial Configuration
 
-### Create Migrations
+To run migrations, first you need to configure Morpheus. To do so, create a `.morpheus.json` file in your project root directory and create a `neo4j/migrations` directory as well.
 
-You can create migrations using the `morpheus` command or manually.
-
-For the first, just issue the command:
-
-```sh
-npm run morpheus create <migration_name>
-```
-
-Migrations will be created under the `neo4j/migrations` directory. Each migration will be a Cypher file with the name `V1_0_0_<migration_name>.cypher`.
-
-Or you can create/add the migration manually  as long as it follows the naming convention as stated in the [Michael's tool](
-https://michael-simons.github.io/neo4j-migrations/current/#concepts_naming-conventions).
-
-
-### Initial Configuration
-
-To run migrations, you need to configure Morpheus. To do so, create a `.morpheus.json` file in your project root directory and create a `neo4j/migrations` directory as well.
-
-Or, you can use the `init` command:
+> Or, you can use the `init` command:
 
 ```sh
 npm run morpheus init
@@ -59,6 +45,15 @@ npm run morpheus init
 If you don't want to use a morpheus.json file, you can also use ENV variables as follows:
 
 ```env
+MORPHEUS_SCHEME=neo4j
+MORPHEUS_HOST=localhost
+MORPHEUS_PORT=7687
+MORPHEUS_USERNAME=neo4j
+MORPHEUS_PASSWORD=neo4j
+```
+
+```env
+# deprecated
 NEO4J_SCHEME=neo4j
 NEO4J_HOST=localhost
 NEO4J_PORT=7687
@@ -66,7 +61,25 @@ NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=neo4j
 ```
 
-### Run Migrations
+
+## Create Migrations
+
+You can create/generate migrations using the `morpheus create` command or create the files manually.
+
+For the first, just issue the command:
+
+```sh
+npm run morpheus create <migration_name>
+```
+
+Migrations will be created under the `neo4j/migrations` directory. Each migration will be a `Cypher` file following the format `V<sem_ver>__<migration_name>.cypher`.
+
+If you want to create/add the migration manually make sure to follow the naming convention as stated in [Michael's tool documentation](
+https://michael-simons.github.io/neo4j-migrations/current/#concepts_naming-conventions).
+
+
+
+## Run Migrations
 
 You can run migrations by running the following command:
 
@@ -76,18 +89,21 @@ npm run morpheus migrate
 This will run all migrations in the `neo4j/migrations` directory.
 
 
-### NestJs Integration
+<h1>
+  NestJs Integration
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="25" alt="Nest Logo" /></a>
+</h1>
+
 
 You can use Morpheus with the [NestJs](https://nestjs.com) framework. 
 
-Migrations will be run automatically when the application is 
-[started](https://docs.nestjs.com/fundamentals/lifecycle-events#lifecycle-events-1): 
-
-![logs](./assets/nest-logs.png) 
+> Migrations will be run automatically when the application is 
+[started](https://docs.nestjs.com/fundamentals/lifecycle-events#lifecycle-events-1) 
+> ![logs](./assets/nest-logs.png) 
 
 The biggest difference is that you don't need to create a `.morpheus.json` file and you can use any name for the ENV variables.
 
-You can use the `forRoot` method as well.
+You can instantiate the module using the `forRoot` or `forRootAsync` methods.
 
 ```ts
 import { Module } from '@nestjs/common';
@@ -107,6 +123,17 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         port: configService.get("MORPHEUS_PORT"),
         username: configService.get("MORPHEUS_USERNAME"),
         password: configService.get("MORPHEUS_PASSWORD"),
+      }),
+    }),
+
+
+    // Using forRoot method
+    MorpheusModule.forRoot({
+        scheme: "neo4j",
+        host: "localhost",
+        port: 7687,
+        username: "neo4j",
+        password: "neo4j",
       }),
     }),
   ],

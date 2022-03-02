@@ -1,5 +1,5 @@
 import { MorpheusModule } from './morpheus.module';
-import { MigrationService } from './migration.service';
-import { MorpheusModuleOptions } from './migration-service-options';
+import { MorpheusService } from './morpheus.service';
+import { MorpheusModuleOptions } from './morpheus-service-options';
 
-export { MorpheusModule, MigrationService, MorpheusModuleOptions };
+export { MorpheusModule, MorpheusService, MorpheusModuleOptions };
