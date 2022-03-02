@@ -26,8 +26,6 @@ export type In = {
   nanoseconds: number;
 };
 
-// export type Neo4jMigrationRelation = {};
-
 export type Neo4jMigrationNode = {
   version: string;
   description: string;
@@ -36,6 +34,10 @@ export type Neo4jMigrationNode = {
   type: 'CYPHER';
 };
 
-export const MigrationLabel = '__Neo4jMigration' as const;
+export const MigrationLabel = '__Neo4jMigration';
 
-export const BASELINE = 'BASELINE' as const;
+export const BASELINE = 'BASELINE';
+
+export const DEFAULT_MIGRATIONS_PATH = 'neo4j/migrations';
+
+export const MORPHEUS_FILE_NAME = '.morpheus.json';

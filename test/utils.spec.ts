@@ -17,17 +17,23 @@ import {
 } from '../src/utils';
 import { crc32 } from 'crc';
 import { Repository } from '../src/repository';
+import { MORPHEUS_FILE_NAME } from '../src/types';
 
 jest.mock('../src/neo4j', () => {
   return {
     Neo4j: {
-      getConnection: () => {},
+      getConnection: () => jest.fn(),
     },
   };
 });
 
 describe('utils', () => {
-  beforeAll(() => {
+  beforeEach(() => {
+    process.env.MORPHEUS_SCHEME = 'neo4j';
+    process.env.MORPHEUS_HOST = 'localhost';
+    process.env.MORPHEUS_PORT = '7687';
+    process.env.MORPHEUS_USERNAME = 'neo4j';
+    process.env.MORPHEUS_PASSWORD = 'neo4j';
     createMigrationsFolder();
   });
   describe('getFileContentAndId', () => {
@@ -39,10 +45,10 @@ describe('utils', () => {
       it('should fail when file has invalid extension', () => {
         expect.assertions(1);
         try {
-          getFileContentAndVersion(new Date().getTime() + '_SomeName.txt');
+          getFileContentAndVersion('randomString' + '_SomeName.txt');
         } catch (error) {
           expect(error).toMatchInlineSnapshot(
-            `[AssertionError: Invalid file name]`,
+            `[AssertionError: Invalid migration file name: randomString_SomeName.txt]`,
           );
         }
       });
@@ -53,7 +59,7 @@ describe('utils', () => {
           getFileContentAndVersion('123' + '_SomeName.cypher');
         } catch (error) {
           expect(error).toMatchInlineSnapshot(
-            `[AssertionError: Invalid file name]`,
+            `[AssertionError: Invalid migration file name: 123_SomeName.cypher]`,
           );
         }
       });
@@ -137,7 +143,7 @@ describe('utils', () => {
   });
 
   describe('createMorpheusFile', () => {
-    const morpheusFilePath = resolve(process.cwd(), '.morpheus.json');
+    const morpheusFilePath = resolve(process.cwd(), MORPHEUS_FILE_NAME);
     beforeEach(() => {
       rimraf.sync(morpheusFilePath);
     });

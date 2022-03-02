@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { Neo4jConfig } from './neo4j';
 import Joi from 'joi';
 import assert from 'assert';
+import { DEFAULT_MIGRATIONS_PATH, MORPHEUS_FILE_NAME } from './types';
 
 function getConfigFromEnv(): Neo4jConfig {
   console.log('Getting config from env');
@@ -14,15 +15,17 @@ function getConfigFromEnv(): Neo4jConfig {
     port: Number(process.env.NEO4J_PORT) || Number(process.env.MORPHEUS_PORT),
     username: process.env.NEO4J_USERNAME || process.env.MORPHEUS_USERNAME,
     password: process.env.NEO4J_PASSWORD || process.env.MORPHEUS_PASSWORD,
+    migrationsPath: process.env.MORPHEUS_MIGRATIONS_PATH,
   };
   return config;
 }
 
 function getConfigFromFile(): Neo4jConfig {
   console.log('Getting config from file');
-  const configPath = resolve(process.cwd(), '.morpheus.json');
+  const configPath = resolve(process.cwd(), MORPHEUS_FILE_NAME);
   assert(existsSync(configPath), "Couldn't find a valid .morpheus.json file");
   const config = readFileSync(configPath, 'utf8');
+
   try {
     const configAsJson = JSON.parse(config);
     return configAsJson;
@@ -46,6 +49,7 @@ function validateConfig(config: Neo4jConfig): void {
     port: Joi.number().required(),
     username: Joi.string().required(),
     password: Joi.string().required(),
+    migrationsPath: Joi.string().optional(),
   }).validate(config);
   if (validationResult.error?.details?.length > 0) {
     validationResult.error.details.forEach((detail) => {
@@ -55,8 +59,26 @@ function validateConfig(config: Neo4jConfig): void {
   }
 }
 
-export function readMorpheusConfig(): Neo4jConfig {
+function readMorpheusConfig(): Neo4jConfig {
   const config = isUsingEnv() ? getConfigFromEnv() : getConfigFromFile();
   validateConfig(config);
+  if (!config.migrationsPath) {
+    config.migrationsPath = DEFAULT_MIGRATIONS_PATH;
+  }
   return config;
+}
+
+export class Config {
+  private static config: Neo4jConfig;
+
+  static setConfig(connectionOptions: Neo4jConfig): void {
+    this.config = connectionOptions;
+  }
+
+  static getConfig(): Neo4jConfig {
+    if (!Config.config) {
+      Config.config = readMorpheusConfig();
+    }
+    return Config.config;
+  }
 }

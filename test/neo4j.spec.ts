@@ -13,7 +13,7 @@ jest.mock('cypher-query-builder', () => {
   };
 });
 
-import * as config from '../src/config';
+import { Config } from '../src/config';
 import { Neo4j } from '../src/neo4j';
 
 describe('Neo4J', () => {
@@ -29,7 +29,7 @@ describe('Neo4J', () => {
 
   describe('getConnection', () => {
     it('should get only one connection ', async () => {
-      jest.spyOn(config, 'readMorpheusConfig').mockImplementationOnce(() => ({
+      jest.spyOn(Config, 'getConfig').mockImplementationOnce(() => ({
         scheme: 'neo4j',
         host: 'localhost',
         port: 7474,
@@ -41,11 +41,11 @@ describe('Neo4J', () => {
       const connection = await Neo4j.getConnection();
       expect(connection).toBeDefined();
       expect(verifyConnectivityMock).toHaveBeenCalledTimes(1);
-      expect(config.readMorpheusConfig).toHaveBeenCalledTimes(1);
+      expect(Config.getConfig).toHaveBeenCalledTimes(1);
     });
 
     it('should get a connection when a valid config was found', async () => {
-      jest.spyOn(config, 'readMorpheusConfig').mockImplementationOnce(() => ({
+      jest.spyOn(Config, 'getConfig').mockImplementationOnce(() => ({
         scheme: 'neo4j',
         host: 'localhost',
         port: 7474,
@@ -58,7 +58,7 @@ describe('Neo4J', () => {
     });
 
     it('should fail get a connection when an invalid config was found', async () => {
-      jest.spyOn(config, 'readMorpheusConfig').mockImplementationOnce(() => ({
+      jest.spyOn(Config, 'getConfig').mockImplementationOnce(() => ({
         scheme: 'neo4j',
         host: 'localhost',
         port: 404,
@@ -73,7 +73,7 @@ describe('Neo4J', () => {
     });
 
     it('should close the connection', async () => {
-      jest.spyOn(config, 'readMorpheusConfig').mockImplementationOnce(() => ({
+      jest.spyOn(Config, 'getConfig').mockImplementationOnce(() => ({
         scheme: 'neo4j',
         host: 'localhost',
         port: 404,

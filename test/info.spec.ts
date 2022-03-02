@@ -1,6 +1,9 @@
-import * as config from '../src/config';
 import * as utils from '../src/utils';
-import { Neo4jMigrationNode, Neo4jMigrationRelation } from '../src/types';
+import {
+  Neo4jMigrationNode,
+  Neo4jMigrationRelation,
+  DEFAULT_MIGRATIONS_PATH,
+} from '../src/types';
 import { Repository } from '../src/repository';
 import { Connection } from 'cypher-query-builder';
 import { Info } from '../src/info';
@@ -16,6 +19,18 @@ jest.mock('../src/neo4j', () => {
   };
 });
 
+jest.mock('../src/config', () => ({
+  Config: {
+    getConfig: () => ({
+      scheme: 'neo4j',
+      host: 'localhost',
+      port: 7474,
+      username: 'neo4j',
+      password: 'password',
+      migrationsPath: DEFAULT_MIGRATIONS_PATH,
+    }),
+  },
+}));
 jest.mock('../src/repository');
 jest.mock('cypher-query-builder');
 const MockedRepository = Repository as jest.MockedClass<typeof Repository>;
@@ -26,14 +41,6 @@ const mockedRepository = new MockedRepository(mockedConnection);
 function infoBuilder() {
   return new Info(mockedRepository);
 }
-
-jest.spyOn(config, 'readMorpheusConfig').mockImplementationOnce(() => ({
-  scheme: 'neo4j',
-  host: 'localhost',
-  port: 7474,
-  username: 'neo4j',
-  password: 'password',
-}));
 
 jest.spyOn(console, 'log');
 

@@ -6,7 +6,6 @@ import { Migrator } from './migrator';
 import { Neo4j } from './neo4j';
 import {
   generateMigration,
-  createMigrationsFolder,
   createMorpheusFile,
   repositoryFactory,
   asyncExecutionWrapper,
@@ -25,7 +24,7 @@ program
   .command('init')
   .description('create a morpheus file')
   .action(() => {
-    executionWrapper(createMigrationsFolder, createMorpheusFile);
+    executionWrapper(createMorpheusFile);
   });
 
 program

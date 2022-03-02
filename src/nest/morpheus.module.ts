@@ -36,7 +36,6 @@ export class MorpheusModule {
 
     return {
       providers: providers,
-      exports: providers,
       module: MorpheusModule,
     };
   }
@@ -49,7 +48,6 @@ export class MorpheusModule {
       module: MorpheusModule,
       imports: options.imports,
       providers: providers,
-      exports: providers,
     };
   }
 

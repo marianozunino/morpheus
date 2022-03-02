@@ -1,33 +1,34 @@
-import { existsSync, unlinkSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
-import { readMorpheusConfig } from '../src/config';
+import { writeFileSync } from 'fs';
+import rimraf from 'rimraf';
+import { Neo4jConfig } from '../src/neo4j';
+import { MORPHEUS_FILE_NAME } from '../src/types';
+import { Config } from '../src/config';
 
 describe('config', () => {
   describe('readMorpheusConfig', () => {
     beforeEach(() => {
-      jest.spyOn(console, 'error').mockImplementation(() => {
-        //
-      });
-      const configPath = resolve(process.cwd(), '.morpheus.json');
-      if (existsSync(configPath)) {
-        unlinkSync(configPath);
-      }
+      jest.spyOn(console, 'error');
+
+      rimraf.sync(MORPHEUS_FILE_NAME);
       // clean env variables
       delete process.env.MORPHEUS_SCHEME;
       delete process.env.MORPHEUS_HOST;
       delete process.env.MORPHEUS_PORT;
       delete process.env.MORPHEUS_USERNAME;
       delete process.env.MORPHEUS_PASSWORD;
+      delete process.env.MORPHEUS_MIGRATIONS_PATH;
+
       delete process.env.NEO4J_SCHEME;
       delete process.env.NEO4J_HOST;
       delete process.env.NEO4J_PORT;
       delete process.env.NEO4J_USERNAME;
       delete process.env.NEO4J_PASSWORD;
+      Config['config'] = undefined;
     });
     it('should fail to read an inexistent file', () => {
       expect.assertions(1);
       try {
-        readMorpheusConfig();
+        Config.getConfig();
       } catch (error) {
         expect(error).toMatchInlineSnapshot(
           `[AssertionError: Couldn't find a valid .morpheus.json file]`,
@@ -36,12 +37,11 @@ describe('config', () => {
     });
 
     it('should read read an empty .morpheus.json file ', () => {
-      resolve(process.cwd(), '.morpheus.json');
-      writeFileSync('.morpheus.json', '');
+      writeFileSync(MORPHEUS_FILE_NAME, '');
       expect.assertions(3);
       jest.spyOn(JSON, 'parse');
       try {
-        readMorpheusConfig();
+        Config.getConfig();
       } catch (error) {
         expect(JSON.parse).toHaveBeenCalled();
         expect(JSON.parse).toThrowErrorMatchingInlineSnapshot(
@@ -55,11 +55,10 @@ describe('config', () => {
 
     it('should read an invalid .morpheus.json file ', () => {
       expect.assertions(3);
-      resolve(process.cwd(), '.morpheus.json');
-      writeFileSync('.morpheus.json', '{}');
+      writeFileSync(MORPHEUS_FILE_NAME, '{}');
       jest.spyOn(JSON, 'parse');
       try {
-        readMorpheusConfig();
+        Config.getConfig();
       } catch (error) {
         expect(JSON.parse).toHaveBeenCalled();
         expect(error).toMatchInlineSnapshot(`[Error: Invalid config]`);
@@ -68,9 +67,8 @@ describe('config', () => {
     });
 
     it('should validate .morpheus.json file ', () => {
-      const path = resolve(process.cwd(), '.morpheus.json');
       writeFileSync(
-        path,
+        MORPHEUS_FILE_NAME,
         `{
       "scheme": "neo4j",
       "host": "localhost",
@@ -80,11 +78,12 @@ describe('config', () => {
           }`,
       );
       jest.spyOn(JSON, 'parse');
-      const config = readMorpheusConfig();
+      const config = Config.getConfig();
       expect(JSON.parse).toHaveBeenCalled();
       expect(config).toMatchInlineSnapshot(`
         Object {
           "host": "localhost",
+          "migrationsPath": "neo4j/migrations",
           "password": "neo4j",
           "port": 7687,
           "scheme": "neo4j",
@@ -95,9 +94,8 @@ describe('config', () => {
 
     it('should report invalid properties in .morpheus.json file ', () => {
       expect.assertions(3);
-      const path = resolve(process.cwd(), '.morpheus.json');
       writeFileSync(
-        path,
+        MORPHEUS_FILE_NAME,
         `{
       "scheme": "invalid",
       "host": "localhost",
@@ -108,11 +106,13 @@ describe('config', () => {
       );
       jest.spyOn(JSON, 'parse');
       try {
-        readMorpheusConfig();
+        Config.getConfig();
       } catch (error) {
         expect(JSON.parse).toHaveBeenCalled();
         expect(error).toMatchInlineSnapshot(`[Error: Invalid config]`);
-        expect(console.error).toHaveBeenCalledWith('"scheme" is required');
+        expect(console.error).toHaveBeenCalledWith(
+          '"scheme" must be one of [neo4j, neo4j+s, neo4j+ssc, bolt, bolt+s, bolt+ssc]',
+        );
       }
     });
 
@@ -123,16 +123,17 @@ describe('config', () => {
       process.env.NEO4J_USERNAME = 'neo4j';
       process.env.NEO4J_PASSWORD = 'neo4j';
 
-      const config = readMorpheusConfig();
+      const config = Config.getConfig();
       expect(config).toMatchInlineSnapshot(`
-          Object {
-            "host": "localhost",
-            "password": "neo4j",
-            "port": 7687,
-            "scheme": "neo4j",
-            "username": "neo4j",
-          }
-        `);
+        Object {
+          "host": "localhost",
+          "migrationsPath": "neo4j/migrations",
+          "password": "neo4j",
+          "port": 7687,
+          "scheme": "neo4j",
+          "username": "neo4j",
+        }
+      `);
     });
 
     it('should support new env variables', () => {
@@ -142,16 +143,64 @@ describe('config', () => {
       process.env.MORPHEUS_USERNAME = 'neo4j';
       process.env.MORPHEUS_PASSWORD = 'neo4j';
 
-      const config = readMorpheusConfig();
+      const config = Config.getConfig();
       expect(config).toMatchInlineSnapshot(`
+        Object {
+          "host": "localhost",
+          "migrationsPath": "neo4j/migrations",
+          "password": "neo4j",
+          "port": 7687,
+          "scheme": "neo4j",
+          "username": "neo4j",
+        }
+      `);
+    });
+
+    describe('support custom migrations path', () => {
+      it('using MORPHEUS env variables', () => {
+        process.env.MORPHEUS_SCHEME = 'neo4j';
+        process.env.MORPHEUS_HOST = 'localhost';
+        process.env.MORPHEUS_PORT = '7687';
+        process.env.MORPHEUS_USERNAME = 'neo4j';
+        process.env.MORPHEUS_PASSWORD = 'neo4j';
+        process.env.MORPHEUS_MIGRATIONS_PATH = 'customPath';
+
+        const config = Config.getConfig();
+        expect(config).toMatchInlineSnapshot(`
           Object {
             "host": "localhost",
+            "migrationsPath": "customPath",
             "password": "neo4j",
             "port": 7687,
             "scheme": "neo4j",
             "username": "neo4j",
           }
         `);
+      });
+
+      it('using .morpheus.json file ', () => {
+        const neo4jConfig: Neo4jConfig = {
+          scheme: 'bolt',
+          host: 'localhost',
+          port: 7687,
+          username: 'neo4j',
+          password: 'neo4j',
+          migrationsPath: 'customPath',
+        };
+
+        writeFileSync(MORPHEUS_FILE_NAME, JSON.stringify(neo4jConfig));
+        const config = Config.getConfig();
+        expect(config).toMatchInlineSnapshot(`
+          Object {
+            "host": "localhost",
+            "migrationsPath": "customPath",
+            "password": "neo4j",
+            "port": 7687,
+            "scheme": "bolt",
+            "username": "neo4j",
+          }
+        `);
+      });
     });
   });
 });

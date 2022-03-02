@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Connection } from 'cypher-query-builder';
 import { Driver } from 'neo4j-driver-core';
+import { Config } from '../config';
 import { Migrator } from '../migrator';
 import { Repository } from '../repository';
 import { MorpheusModuleOptions } from './morpheus-service-options';
@@ -16,6 +17,8 @@ export class MorpheusService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     try {
+      Config.setConfig(this.connectionOptions);
+
       await this.stablishConnection();
       this.logger.log('Executing migrations');
       const repository = new Repository(this.connection);

@@ -20,13 +20,11 @@ jest.mock('../migrator.ts', () => ({
   Migrator: jest.fn(() => migratorImpl),
 }));
 
-// const MockedConnection = Connection as jest.Mocked<typeof Connection>;
-
 describe('PouchService', () => {
   let service: MorpheusService;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    const testingModule: TestingModule = await Test.createTestingModule({
       providers: [
         {
           provide: MorpheusService,
@@ -41,7 +39,7 @@ describe('PouchService', () => {
       ],
     }).compile();
 
-    service = module.get<MorpheusService>(MorpheusService);
+    service = testingModule.get<MorpheusService>(MorpheusService);
   });
 
   describe('onModuleInit', () => {
