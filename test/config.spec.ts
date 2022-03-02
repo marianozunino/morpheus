@@ -30,9 +30,11 @@ describe('config', () => {
       try {
         Config.getConfig();
       } catch (error) {
-        expect(error).toMatchInlineSnapshot(
-          `[AssertionError: Couldn't find a valid .morpheus.json file]`,
-        );
+        expect(error).toMatchInlineSnapshot(`
+          [AssertionError: Couldn't find a valid .morpheus.json file.
+          Issue the following command to create one:
+          > morpheus init]
+        `);
       }
     });
 
