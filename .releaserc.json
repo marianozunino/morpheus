@@ -8,29 +8,21 @@
         "changelogFile": "CHANGELOG.md"
       }
     ],
-    "@semantic-release/npm",
+    [
+      "@semantic-release/npm",
+      {
+        "tarBallDir": "."
+      }
+    ],
     [
       "@semantic-release/git",
       {
         "assets": [
           "package.json",
-          "CHANGELOG.md"
+          "CHANGELOG.md",
+          "*.tgz"
         ],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
-      }
-    ],
-    [
-      "@semantic-release/github",
-      {
-        "assets": [
-          {
-            "path": [
-              "dist/**"
-            ],
-            "label": "Morpheus ${nextRelease.version}",
-            "name": "Morpheus ${nextRelease.version}"
-          }
-        ]
       }
     ]
   ],
