@@ -33,7 +33,7 @@ export class MorpheusService implements OnModuleInit {
     }
   }
 
-  async stablishConnection(): Promise<void> {
+  private async stablishConnection(): Promise<void> {
     this.connection = new Connection(
       `${this.connectionOptions.scheme}://${this.connectionOptions.host}:${this.connectionOptions.port}`,
       {

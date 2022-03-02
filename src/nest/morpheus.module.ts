@@ -60,10 +60,7 @@ export class MorpheusModule {
       return [
         {
           provide: MorpheusModule,
-          useFactory: async (...args: any[]) => {
-            const asyncOptions = await options.useFactory(...args);
-            return new MorpheusService(asyncOptions);
-          },
+          useFactory: this.createFactoryWrapper(options.useFactory),
           inject: options.inject || [],
         },
       ];
@@ -72,5 +69,14 @@ export class MorpheusModule {
       'MorpheusModule.forRootAsync() requires a useFactory function',
     );
     throw new Error('You must provide a useFactory function');
+  }
+
+  private static createFactoryWrapper(
+    useFactory: MorpheusModuleAsyncOptions['useFactory'],
+  ) {
+    return async (...args: any[]) => {
+      const clientOptions = await useFactory(...args);
+      return new MorpheusService(clientOptions);
+    };
   }
 }
