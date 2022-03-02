@@ -1,3 +1,15 @@
+# [2.3.0](https://github.com/marianozunino/morpheus/compare/v2.2.5...v2.3.0) (2022-03-02)
+
+
+### Bug Fixes
+
+* **minor:** update some messages ([4e79ee2](https://github.com/marianozunino/morpheus/commit/4e79ee279dfe257c729813cecdef9a97960a12f6))
+
+
+### Features
+
+* add configurable migrations path option ([48d814a](https://github.com/marianozunino/morpheus/commit/48d814ab5989cbbcbb581b83a5b7259fdf7a607d))
+
 ## [2.2.5](https://github.com/marianozunino/morpheus/compare/v2.2.4...v2.2.5) (2022-03-02)
 
 
