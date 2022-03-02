@@ -1,3 +1,10 @@
+## [2.2.5](https://github.com/marianozunino/morpheus/compare/v2.2.4...v2.2.5) (2022-03-02)
+
+
+### Bug Fixes
+
+* **deploy:** unique label for github release ([d72d340](https://github.com/marianozunino/morpheus/commit/d72d34021292cc19b695e570c29a96f090e208c4))
+
 ## [2.2.4](https://github.com/marianozunino/morpheus/compare/v2.2.3...v2.2.4) (2022-03-02)
 
 
