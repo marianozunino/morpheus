@@ -6,7 +6,7 @@ import assert from 'assert';
 import { DEFAULT_MIGRATIONS_PATH, MORPHEUS_FILE_NAME } from './types';
 
 function getConfigFromEnv(): Neo4jConfig {
-  console.log('Getting config from env');
+  console.log('Reading config from environment variables...');
   const config = {
     scheme:
       (process.env.NEO4J_SCHEME as Neo4jConfig['scheme']) ||
@@ -21,9 +21,12 @@ function getConfigFromEnv(): Neo4jConfig {
 }
 
 function getConfigFromFile(): Neo4jConfig {
-  console.log('Getting config from file');
+  console.log('Reading config file...');
   const configPath = resolve(process.cwd(), MORPHEUS_FILE_NAME);
-  assert(existsSync(configPath), "Couldn't find a valid .morpheus.json file");
+  assert(
+    existsSync(configPath),
+    "Couldn't find a valid .morpheus.json file.\nIssue the following command to create one:\n> morpheus init",
+  );
   const config = readFileSync(configPath, 'utf8');
 
   try {
