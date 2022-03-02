@@ -1,3 +1,10 @@
+## [2.3.1](https://github.com/marianozunino/morpheus/compare/v2.3.0...v2.3.1) (2022-03-02)
+
+
+### Bug Fixes
+
+* **minor:** make neo4j-driver-core a dev dependency ([e0a0e9c](https://github.com/marianozunino/morpheus/commit/e0a0e9c47b1f55dfd43084b87d57c31962f41e7b))
+
 # [2.3.0](https://github.com/marianozunino/morpheus/compare/v2.2.5...v2.3.0) (2022-03-02)
 
 
