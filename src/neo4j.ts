@@ -1,6 +1,6 @@
 import { Connection } from 'cypher-query-builder';
 import { Driver } from 'neo4j-driver-core';
-import { readMorpheusConfig } from './config';
+import { Config } from './config';
 
 export type Neo4jScheme =
   | 'neo4j'
@@ -17,6 +17,7 @@ export interface Neo4jConfig {
   port: number;
   username: string;
   password: string;
+  migrationsPath?: string;
 }
 
 type ConnectionWithDriver = Connection & { driver: Driver };
@@ -32,7 +33,7 @@ export class Neo4j {
 
   static async getConnection(): Promise<Connection> {
     if (!Neo4j.connection) {
-      this.config = readMorpheusConfig();
+      this.config = Config.getConfig();
       this.connection = new Connection(
         `${this.config.scheme}://${this.config.host}:${this.config.port}`,
         {

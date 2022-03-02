@@ -17,18 +17,14 @@ describe(`MorpheusModule`, () => {
   describe(`forRootAsync`, () => {
     it('should create a MorpheusModule ', () => {
       const morpheusModule = MorpheusModule.forRootAsync({
-        useFactory: (asd) => ({
-          host: asd(),
+        useFactory: (someService) => ({
+          host: someService(),
           port: 5984,
           scheme: 'neo4j',
           username: 'test',
           password: 'test',
         }),
-        inject: [
-          function asd() {
-            console.log('magic');
-          },
-        ],
+        inject: [],
       });
       expect(morpheusModule).toBeDefined();
     });

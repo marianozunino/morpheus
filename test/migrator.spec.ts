@@ -1,7 +1,10 @@
-import * as config from '../src/config';
 import * as utils from '../src/utils';
 import { Migrator } from '../src/migrator';
-import { BASELINE, Neo4jMigrationNode } from '../src/types';
+import {
+  BASELINE,
+  Neo4jMigrationNode,
+  DEFAULT_MIGRATIONS_PATH,
+} from '../src/types';
 import { crc32 } from 'crc';
 import { Repository } from '../src/repository';
 import { Connection } from 'cypher-query-builder';
@@ -39,12 +42,17 @@ function generateNeo4jBaseline(
   };
 }
 
-jest.spyOn(config, 'readMorpheusConfig').mockImplementationOnce(() => ({
-  scheme: 'neo4j',
-  host: 'localhost',
-  port: 7474,
-  username: 'neo4j',
-  password: 'password',
+jest.mock('../src/config', () => ({
+  Config: {
+    getConfig: () => ({
+      scheme: 'neo4j',
+      host: 'localhost',
+      port: 7474,
+      username: 'neo4j',
+      password: 'password',
+      migrationsPath: DEFAULT_MIGRATIONS_PATH,
+    }),
+  },
 }));
 
 jest.spyOn(console, 'log');
@@ -89,7 +97,7 @@ describe('migrator', () => {
       beforeEach(() => {
         mockUtils.getFileNamesFromMigrationsFolder = jest
           .fn()
-          .mockReturnValue(Promise.resolve(['asd']));
+          .mockReturnValue(Promise.resolve(['someValue']));
       });
       it('should not run any migrations', async () => {
         mockUtils.getFileNamesFromMigrationsFolder = jest
@@ -138,7 +146,9 @@ describe('migrator', () => {
           const migrator = migratorBuilder();
           await expect(
             migrator.migrate(),
-          ).rejects.toThrowErrorMatchingInlineSnapshot(`"Invalid file name"`);
+          ).rejects.toThrowErrorMatchingInlineSnapshot(
+            `"Invalid migration file name: wrong_name"`,
+          );
         });
         it('should execute old and new migrations', async () => {
           mockUtils.getFileContentAndVersion = jest.fn().mockReturnValue({
