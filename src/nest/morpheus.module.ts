@@ -8,14 +8,7 @@ import {
 import { MorpheusService } from './morpheus.service';
 import { MorpheusModuleOptions } from './morpheus-service-options';
 
-export interface MorpheusModuleOptionsFactory {
-  createObjectionModuleOptions():
-    | Promise<MorpheusModuleOptions>
-    | MorpheusModuleOptions;
-}
-
-export interface MorpheusModuleAsyncOptions
-  extends Pick<ModuleMetadata, 'imports'> {
+interface MorpheusModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
   useFactory: (
     ...args: any[]
   ) => MorpheusModuleOptions | Promise<MorpheusModuleOptions>;
