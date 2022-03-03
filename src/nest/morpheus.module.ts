@@ -64,7 +64,7 @@ export class MorpheusModule {
 
   private static createFactoryWrapper(
     useFactory: MorpheusModuleAsyncOptions['useFactory'],
-  ) {
+  ): (...args: any[]) => Promise<MorpheusService> {
     return async (...args: any[]) => {
       const clientOptions = await useFactory(...args);
       return new MorpheusService(clientOptions);
