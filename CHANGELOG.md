@@ -1,3 +1,10 @@
+## [2.3.2](https://github.com/marianozunino/morpheus/compare/v2.3.1...v2.3.2) (2022-03-10)
+
+
+### Bug Fixes
+
+* remove internal exports ([d98d00b](https://github.com/marianozunino/morpheus/commit/d98d00b6b02f93328b5ce8787a46146139fa7488))
+
 ## [2.3.1](https://github.com/marianozunino/morpheus/compare/v2.3.0...v2.3.1) (2022-03-02)
 
 
