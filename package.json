@@ -1,18 +1,14 @@
 {
   "name": "morpheus4j",
   "version": "2.3.1",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/nest/index.js",
+  "types": "dist/nest/index.d.ts",
   "description": "Morpheus is a migration tool for Neo4j. It aims to be a simple and intuitive way to migrate your database.",
   "license": "MIT",
   "author": {
     "name": "Mariano Zunino",
     "email": "marianoz@zoho.com",
     "url": "https://github.com/marianozunino"
-  },
-  "exports": {
-    "./nest": "./dist/nest/index.js",
-    "./package.json": "./package.json"
   },
   "typesVersions": {
     "*": {
