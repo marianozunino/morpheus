@@ -17,6 +17,10 @@ export interface Neo4jConfig {
   port: number;
   username: string;
   password: string;
+  /**
+   * Path to the migrations folder
+   * @default './neo4j/migrations'
+   **/
   migrationsPath?: string;
 }
 

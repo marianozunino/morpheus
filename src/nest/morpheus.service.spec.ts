@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { MorpheusService } from './morpheus.service';
 
 const migratorImpl = {
@@ -24,7 +24,7 @@ describe('PouchService', () => {
   let service: MorpheusService;
 
   beforeEach(async () => {
-    const testingModule: TestingModule = await Test.createTestingModule({
+    const moduleRef = await Test.createTestingModule({
       providers: [
         {
           provide: MorpheusService,
@@ -39,7 +39,7 @@ describe('PouchService', () => {
       ],
     }).compile();
 
-    service = testingModule.get<MorpheusService>(MorpheusService);
+    service = moduleRef.get<MorpheusService>(MorpheusService);
   });
 
   describe('onModuleInit', () => {

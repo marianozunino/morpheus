@@ -5,6 +5,8 @@ import { Config } from '../config';
 import { Migrator } from '../migrator';
 import { Repository } from '../repository';
 import { MorpheusModuleOptions } from './morpheus-service-options';
+import { createMigrationsFolder } from '../utils';
+import { DEFAULT_MIGRATIONS_PATH } from '../types';
 
 type ConnectionWithDriver = Connection & { driver: Driver };
 
@@ -13,13 +15,17 @@ export class MorpheusService implements OnModuleInit {
   private connection: ConnectionWithDriver;
   private readonly logger = new Logger(MorpheusService.name);
 
-  constructor(private readonly connectionOptions: MorpheusModuleOptions) {}
+  constructor(private readonly connectionOptions: MorpheusModuleOptions) {
+    connectionOptions.migrationsPath =
+      connectionOptions.migrationsPath || DEFAULT_MIGRATIONS_PATH;
+  }
 
   async onModuleInit(): Promise<void> {
     try {
       Config.setConfig(this.connectionOptions);
 
       await this.stablishConnection();
+      createMigrationsFolder();
       this.logger.log('Executing migrations');
       const repository = new Repository(this.connection);
       await new Migrator(repository).migrate();
