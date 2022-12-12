@@ -1,3 +1,10 @@
+## [2.3.3](https://github.com/marianozunino/morpheus/compare/v2.3.2...v2.3.3) (2022-12-12)
+
+
+### Bug Fixes
+
+* auto create migration folder when using nestjs ([cf4c8db](https://github.com/marianozunino/morpheus/commit/cf4c8db84282a670fcd135dfedfdb1c8e648c3a0))
+
 ## [2.3.2](https://github.com/marianozunino/morpheus/compare/v2.3.1...v2.3.2) (2022-03-10)
 
 
