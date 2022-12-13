@@ -51,7 +51,10 @@ export function getFileContentAndVersion(fileName: string): {
   const version = result[1].replace(/_/g, '.');
   const filePath = resolve(process.cwd(), migrationsPath, fileName);
 
-  assert(existsSync(filePath), `Migration ${fileName} not found`);
+  assert(
+    existsSync(filePath),
+    `Missing migration: ${fileName}. Neo4j reports it as applied, but it is missing locally.`,
+  );
   const fileContent = readFileSync(filePath, 'utf8');
 
   return { version, fileContent };

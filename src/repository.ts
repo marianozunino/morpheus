@@ -49,7 +49,7 @@ export class Repository {
 
   public async createConstraints(): Promise<void> {
     await this.executeQueries([
-      `CREATE CONSTRAINT unique_version_${MigrationLabel} IF NOT exists ON (m:${MigrationLabel}) ASSERT m.version IS UNIQUE`,
+      `CREATE CONSTRAINT unique_version_${MigrationLabel} IF NOT exists FOR (m:${MigrationLabel}) REQUIRE m.version IS UNIQUE`,
       `CREATE INDEX idx_version_${MigrationLabel} IF NOT exists FOR (m:${MigrationLabel}) ON (m.version)`,
     ]);
   }

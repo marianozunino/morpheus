@@ -56,8 +56,8 @@ export class Info {
           Version: file.version,
           Description: file.description,
           Type: 'CYPHER',
-          InstalledOn: '',
-          ExecutionTime: '',
+          InstalledOn: 'N/A',
+          ExecutionTime: 'N/A',
           State: 'PENDING',
           Source: file.file,
         };
