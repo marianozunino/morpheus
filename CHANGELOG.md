@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/marianozunino/morpheus/compare/v2.3.3...v2.4.0) (2022-12-13)
+
+
+### Features
+
+* support neo4j version 5 ([9fa4413](https://github.com/marianozunino/morpheus/commit/9fa44132eb1584ad40ed1bf423697d136a8b6033))
+
 ## [2.3.3](https://github.com/marianozunino/morpheus/compare/v2.3.2...v2.3.3) (2022-12-12)
 
 
