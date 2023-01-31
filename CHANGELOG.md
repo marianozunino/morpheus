@@ -1,3 +1,10 @@
+## [2.4.1](https://github.com/marianozunino/morpheus/compare/v2.4.0...v2.4.1) (2023-01-31)
+
+
+### Bug Fixes
+
+* return status code 1 if migration process fails ([866b0b3](https://github.com/marianozunino/morpheus/commit/866b0b3407222d499f57e6b8a0cce2f5f8c7c602))
+
 # [2.4.0](https://github.com/marianozunino/morpheus/compare/v2.3.3...v2.4.0) (2022-12-13)
 
 
