@@ -2,6 +2,7 @@ export type MigrationInfo = {
   node: Neo4jMigrationNode;
   relation: Neo4jMigrationRelation;
 };
+
 export type Neo4jMigrationRelation = {
   at: At;
   in: In;
@@ -34,10 +35,17 @@ export type Neo4jMigrationNode = {
   type: 'CYPHER';
 };
 
-export const MigrationLabel = '__Neo4jMigration';
+export type FileInfo = {
+  version: string;
+  fileName: string;
+  description: string;
+};
 
-export const BASELINE = 'BASELINE';
+export type InitOptions = {
+  force?: boolean;
+};
 
-export const DEFAULT_MIGRATIONS_PATH = 'neo4j/migrations';
-
-export const MORPHEUS_FILE_NAME = '.morpheus.json';
+export enum MigrationState {
+  PENDING = 'PENDING',
+  APPLIED = 'APPLIED',
+}

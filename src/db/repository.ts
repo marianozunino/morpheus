@@ -1,20 +1,24 @@
+import { Inject, Injectable } from '@nestjs/common';
 import { Connection, node, Node, relation } from 'cypher-query-builder';
-import { Transaction } from 'neo4j-driver-core/types';
+import { Transaction } from 'neo4j-driver-core';
+import { CONNECTION_TOKEN, BASELINE, MIGRATION_LABEL } from '../app.constants';
 import {
   Neo4jMigrationNode,
-  MigrationLabel,
-  BASELINE,
   Neo4jMigrationRelation,
   MigrationInfo,
-} from './types';
+} from '../types';
 
+@Injectable()
 export class Repository {
-  constructor(private readonly connection: Connection) {}
+  public constructor(
+    @Inject(CONNECTION_TOKEN)
+    private readonly neo4j: Connection,
+  ) {}
 
   public async fetchBaselineNode(): Promise<Neo4jMigrationNode> {
-    const [baseNode] = await this.connection
+    const [baseNode] = await this.neo4j
       .query()
-      .matchNode('base', MigrationLabel)
+      .matchNode('base', MIGRATION_LABEL)
       .where({ 'base.version': BASELINE })
       .return('base')
       .run<Node<Neo4jMigrationNode>>();
@@ -31,15 +35,15 @@ export class Repository {
       }
     } else {
       for (const statement of queries) {
-        await this.connection.raw(statement).run();
+        await this.neo4j.raw(statement).run();
       }
     }
   }
   public async getLatestMigration(): Promise<Neo4jMigrationNode> {
-    const [latestMigration] = await this.connection
+    const [latestMigration] = await this.neo4j
       .query()
-      .matchNode('migration', MigrationLabel)
-      .raw(`WHERE NOT (migration)-[:MIGRATED_TO]->(:${MigrationLabel})`)
+      .matchNode('migration', MIGRATION_LABEL)
+      .raw(`WHERE NOT (migration)-[:MIGRATED_TO]->(:${MIGRATION_LABEL})`)
       .return('migration')
       .raw(`LIMIT 1`)
       .run<Node<Neo4jMigrationNode>>();
@@ -49,24 +53,24 @@ export class Repository {
 
   public async createConstraints(): Promise<void> {
     await this.executeQueries([
-      `CREATE CONSTRAINT unique_version_${MigrationLabel} IF NOT exists FOR (m:${MigrationLabel}) REQUIRE m.version IS UNIQUE`,
-      `CREATE INDEX idx_version_${MigrationLabel} IF NOT exists FOR (m:${MigrationLabel}) ON (m.version)`,
+      `CREATE CONSTRAINT unique_version_${MIGRATION_LABEL} IF NOT exists FOR (m:${MIGRATION_LABEL}) REQUIRE m.version IS UNIQUE`,
+      `CREATE INDEX idx_version_${MIGRATION_LABEL} IF NOT exists FOR (m:${MIGRATION_LABEL}) ON (m.version)`,
     ]);
   }
 
   public async createBaseNode(): Promise<void> {
-    await this.connection
+    await this.neo4j
       .query()
-      .createNode('base', MigrationLabel, { version: BASELINE })
+      .createNode('base', MIGRATION_LABEL, { version: BASELINE })
       .run();
   }
 
   public async getPreviousMigrations(): Promise<Neo4jMigrationNode[]> {
-    const rows = await this.connection
+    const rows = await this.neo4j
       .query()
       .raw(
-        `MATCH (b:${MigrationLabel} {version:"${BASELINE}"}) - [r:MIGRATED_TO*] -> (l:${MigrationLabel})
-         WHERE NOT (l)-[:MIGRATED_TO]->(:${MigrationLabel})
+        `MATCH (b:${MIGRATION_LABEL} {version:"${BASELINE}"}) - [r:MIGRATED_TO*] -> (l:${MIGRATION_LABEL})
+         WHERE NOT (l)-[:MIGRATED_TO]->(:${MIGRATION_LABEL})
          RETURN DISTINCT l`,
       )
       .run<Node<Neo4jMigrationNode>>();
@@ -83,15 +87,15 @@ export class Repository {
     fromVersion: string,
     duration: number,
   ): string {
-    return this.connection
+    return this.neo4j
       .query()
-      .matchNode('migration', MigrationLabel)
+      .matchNode('migration', MIGRATION_LABEL)
       .where({ 'migration.version': fromVersion })
       .with('migration')
       .create([
         node('migration'),
         relation('out', 'r', 'MIGRATED_TO'),
-        node('newMigration', MigrationLabel, neo4jMigration),
+        node('newMigration', MIGRATION_LABEL, neo4jMigration),
       ])
       .raw(
         'SET r.at = datetime({timezone: "UTC"}), r.in = duration({milliseconds: $duration})',
@@ -103,12 +107,12 @@ export class Repository {
   }
 
   public async getMigrationInfo(): Promise<MigrationInfo[]> {
-    const nodes = await this.connection
+    const nodes = await this.neo4j
       .query()
       .match([
-        node(MigrationLabel),
+        node(MIGRATION_LABEL),
         relation('out', 'r', 'MIGRATED_TO'),
-        node('migration', MigrationLabel),
+        node('migration', MIGRATION_LABEL),
       ])
       .return(['migration', 'r'])
       .run<Node<Neo4jMigrationNode & Neo4jMigrationRelation>>();
@@ -120,6 +124,6 @@ export class Repository {
   }
 
   public getTransaction(): Transaction {
-    return this.connection.session().beginTransaction();
+    return this.neo4j.session().beginTransaction() as unknown as Transaction;
   }
 }

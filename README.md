@@ -95,8 +95,7 @@ This will run all migrations in the `neo4j/migrations` directory.
 You can use Morpheus with the [NestJs](https://nestjs.com) framework.
 
 > Migrations will be run automatically when the application is
-> [started](https://docs.nestjs.com/fundamentals/lifecycle-events#lifecycle-events-1)
-> ![logs](./assets/nest-logs.png)
+> [started](https://docs.nestjs.com/fundamentals/lifecycle-events#lifecycle-events-1) > ![logs](./assets/nest-logs.png)
 
 The biggest difference is that you don't need to create a `.morpheus.json` file and you can use any name for the ENV variables.
 
