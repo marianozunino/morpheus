@@ -51,7 +51,12 @@ program
   .action(() => {
     void asyncExecutionWrapper(async () => {
       const repository = await repositoryFactory();
-      await new Migrator(repository).migrate();
+      try {
+        await new Migrator(repository).migrate();
+      } catch (error) {
+        console.error(error.message);
+        process.exit(1);
+      }
     });
   });
 
