@@ -13,7 +13,7 @@
   "typesVersions": {
     "*": {
       "nest": [
-        "dist/nest/index.d.ts"
+        "dist/morpheus/index.d.ts"
       ]
     }
   },
@@ -29,7 +29,7 @@
     "cli"
   ],
   "bin": {
-    "morpheus": "./dist/index.js"
+    "morpheus": "./dist/main.js"
   },
   "files": [
     "dist"
@@ -93,7 +93,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json --setupFiles dotenv/config --forceExit --runInBand",
     "prepare": "husky install",
-    "morpheus": "node ./dist/index.js",
+    "morpheus": "node ./dist/main.js",
     "lint": "eslint src/**/*.ts --fix",
     "cspell": "cspell \"**/*.{ts,js,json,md}\""
   }
