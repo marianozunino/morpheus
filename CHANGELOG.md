@@ -1,3 +1,15 @@
+# [3.0.0](https://github.com/marianozunino/morpheus/compare/v2.4.1...v3.0.0) (2023-02-03)
+
+
+### Features
+
+* migrate to nestjs 9 ([f09004b](https://github.com/marianozunino/morpheus/commit/f09004bbd96ba05c308b3c36e38f14e771bdc82c))
+
+
+### BREAKING CHANGES
+
+* nestjs@9 is now required
+
 ## [2.4.1](https://github.com/marianozunino/morpheus/compare/v2.4.0...v2.4.1) (2023-01-31)
 
 
