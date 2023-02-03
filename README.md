@@ -13,7 +13,11 @@ Morpheus is a database migration tool for Neo4j written in Typescript.
 > It is designed to be a simple, intuitive tool for database migrations.
 > It is inspired by [Michael Simons tool for Java](https://github.com/michael-simons/neo4j-migrations).
 
-### _*This project has been tested with `Neo4j 4.4.4`*_
+### This project has been tested with
+
+> - Neo4j 4.4.4
+> - Neo4j 5.x
+> - Neo4j Aura
 
 # Installation
 
@@ -46,21 +50,23 @@ npm run morpheus init
 If you don't want to use a morpheus.json file, you can also use ENV variables as follows:
 
 ```env
+# This refers to the scheme used to connect to the database. https://neo4j.com/docs/upgrade-migration-guide/current/version-4/migration/drivers/new-uri-schemes/
 MORPHEUS_SCHEME=neo4j
-MORPHEUS_HOST=localhost
-MORPHEUS_PORT=7687
-MORPHEUS_USERNAME=neo4j
-MORPHEUS_PASSWORD=neo4j
-MORPHEUS_MIGRATIONS_PATH=neo4j/migrations # default value
-```
 
-```env
-# deprecated
-NEO4J_SCHEME=neo4j
-NEO4J_HOST=localhost
-NEO4J_PORT=7687
-NEO4J_USERNAME=neo4j
-NEO4J_PASSWORD=neo4j
+# This refers to the host of the database, don't include the port nor the scheme.
+MORPHEUS_HOST=localhost
+
+# This refers to the port of the database.
+MORPHEUS_PORT=7687
+
+# This refers to the username of the database.
+MORPHEUS_USERNAME=neo4j
+
+# This refers to the password of the database.
+MORPHEUS_PASSWORD=neo4j
+
+# This refers to the path where the migrations are located.
+MORPHEUS_MIGRATIONS_PATH=neo4j/migrations # default value
 ```
 
 ## Create Migrations
@@ -95,8 +101,7 @@ This will run all migrations in the `neo4j/migrations` directory.
 You can use Morpheus with the [NestJs](https://nestjs.com) framework.
 
 > Migrations will be run automatically when the application is
-> [started](https://docs.nestjs.com/fundamentals/lifecycle-events#lifecycle-events-1)
-> ![logs](./assets/nest-logs.png)
+> [started](https://docs.nestjs.com/fundamentals/lifecycle-events#lifecycle-events-1) > ![logs](./assets/nest-logs.png)
 
 The biggest difference is that you don't need to create a `.morpheus.json` file and you can use any name for the ENV variables.
 
@@ -104,36 +109,32 @@ You can instantiate the module using the `forRoot` or `forRootAsync` methods.
 
 ```ts
 import { Module } from '@nestjs/common';
+import { ConfigService, ConfigModule } from '@nestjs/config';
 import { MorpheusModule } from 'morpheus4j';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
-
-    // Using forRootAsync with Dependency Injection
-    MorpheusModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        scheme: configService.get("MORPHEUS_SCHEME"),
-        host: configService.get("MORPHEUS_HOST"),
-        port: configService.get("MORPHEUS_PORT"),
-        username: configService.get("MORPHEUS_USERNAME"),
-        password: configService.get("MORPHEUS_PASSWORD"),
-        migrationsPath: "./neo4j/migrations", // default value
-      }),
+    // Sync register
+    MorpheusModule.register({
+      scheme: 'bolt',
+      host: 'localhost',
+      port: 7687,
+      username: 'neo4j',
+      password: 'password',
+      migrationsPath: './neo4j/migrations', // default value
     }),
-
-
-    // Using forRoot method
-    MorpheusModule.forRoot({
-        scheme: "neo4j",
-        host: "localhost",
-        port: 7687,
-        username: "neo4j",
-        password: "neo4j",
-        migrationsPath: "./migrations",
+    // Async register
+    MorpheusModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        scheme: configService.get('MORPHEUS_SCHEME'),
+        host: configService.get('MORPHEUS_HOST'),
+        port: configService.get('MORPHEUS_PORT'),
+        username: configService.get('MORPHEUS_USERNAME'),
+        password: configService.get('MORPHEUS_PASSWORD'),
+        migrationsPath: './neo4j/migrations', // default value
       }),
+      inject: [ConfigService],
     }),
   ],
 })
