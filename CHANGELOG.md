@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/marianozunino/morpheus/compare/v3.0.0...v3.0.1) (2023-03-09)
+
+
+### Bug Fixes
+
+* compare migrations according to semver ([cba10b6](https://github.com/marianozunino/morpheus/commit/cba10b6346668fb6c46d3ba4b5f555137ceef127))
+
 # [3.0.0](https://github.com/marianozunino/morpheus/compare/v2.4.1...v3.0.0) (2023-02-03)
 
 
