@@ -96,7 +96,17 @@ export class MigrationService {
       );
     });
 
-    return candidateMigrations;
+    // sort migrations by version. eg: 1.1.1 < 1.1.2 < 1.2.1 < 2.1.1 < 2.9.1 < 2.10.1 < 2.11.0
+    const x = candidateMigrations.sort((a, b) => {
+      const versionA = this.fsService.getMigrationVersionFromFileName(a);
+      const versionB = this.fsService.getMigrationVersionFromFileName(b);
+      return versionA.localeCompare(versionB, undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+    });
+
+    return x;
   }
 
   private async validateMigrationsIntegrity(): Promise<void> {

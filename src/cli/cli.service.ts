@@ -71,6 +71,7 @@ export class CliService {
         Description: migration.node.description,
         Type: migration.node.type,
         State: MigrationState.APPLIED,
+        Source: migration.node.source,
       };
     });
 

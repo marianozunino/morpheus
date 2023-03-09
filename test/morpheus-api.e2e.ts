@@ -1,10 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { cleanUp, closeNeo4j, openNeo4j } from './utils';
-import { MorpheusModule } from '../src/morpheus/morpheus.module';
+import { MorpheusModule } from '../src/morpheus';
 import { LoggerService } from '../src/logger.service';
 import { INestApplication } from '@nestjs/common';
 import * as testUtils from './utils';
-import { DEFAULT_MIGRATIONS_PATH } from '../src/app.constants';
+import {
+  DEFAULT_MIGRATIONS_PATH,
+  MORPHEUS_FILE_NAME,
+} from '../src/app.constants';
+import { writeFile } from 'fs-extra';
 
 jest.mock('../src/logger.service');
 
@@ -42,6 +46,22 @@ describe('Morpheus API (e2e)', () => {
         expect(e).toBeDefined();
         expect(e.message).toEqual(
           "Couldn't find a valid .morpheus.json file.\nIssue the following command to create one:\n> morpheus init",
+        );
+      }
+    });
+
+    it('fails if the .morpheus.json file is invalid', async () => {
+      await writeFile(
+        MORPHEUS_FILE_NAME,
+        JSON.stringify('invalid json file', null, 2),
+      );
+      expect.assertions(2);
+      try {
+        await app.init();
+      } catch (e) {
+        expect(e).toBeDefined();
+        expect(e.message).toEqual(
+          expect.stringContaining("Couldn't parse .morpheus.json file"),
         );
       }
     });
