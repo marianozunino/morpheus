@@ -1,5 +1,5 @@
 {
-  "words": ["nestjs", "datetime", "Zunino", "commitlint", "Simons"],
+  "words": ["nestjs", "datetime", "Zunino", "commitlint", "Simons", "lcov"],
   "language": "en",
   "ignorePaths": [
     "**/node_modules/**",

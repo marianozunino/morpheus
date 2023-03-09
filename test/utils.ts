@@ -19,10 +19,17 @@ export const cleanUp = async (): Promise<void> => {
     rm('neo4j', { recursive: true, force: true }),
     rm(simplePath, { recursive: true, force: true }),
     rm(nestedPath, { recursive: true, force: true }),
+    connection.query().raw('CALL apoc.schema.assert({}, {})').run(),
+    connection.query().raw('MATCH (n) DETACH DELETE n').run(),
   ]);
 
-  await connection.query().raw('CALL apoc.schema.assert({}, {})').run();
-  await connection.query().raw('MATCH (n) DETACH DELETE n').run();
+  // unset the environment variables
+  delete process.env.MORPHEUS_SCHEME;
+  delete process.env.MORPHEUS_HOST;
+  delete process.env.MORPHEUS_PORT;
+  delete process.env.MORPHEUS_USERNAME;
+  delete process.env.MORPHEUS_PASSWORD;
+  delete process.env.MORPHEUS_MIGRATIONS_PATH;
 };
 
 export const closeNeo4j = async (): Promise<void> => {

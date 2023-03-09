@@ -1,12 +1,41 @@
 {
-  "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
+  "moduleFileExtensions": [
+    "js",
+    "json",
+    "ts"
+  ],
+  "rootDir": "../",
   "testEnvironment": "node",
   "testRegex": ".e2e.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": "./tsconfig.json" }]
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "tsconfig": "./tsconfig.json"
+      }
+    ]
   },
-  "setupFiles": ["dotenv/config"],
-  "testTimeout": 10000,
-  "verbose": true
+  "setupFiles": [
+    "dotenv/config"
+  ],
+  "testTimeout": 15000,
+  "verbose": true,
+  "collectCoverageFrom": [
+    "./src/**/*.ts",
+    "!./src/**/*.spec.ts"
+  ],
+  "coverageThreshold": {
+    "global": {
+      "branches": 80,
+      "functions": 80,
+      "lines": 80,
+      "statements": 80
+    }
+  },
+  "coverageReporters": [
+    "text",
+    "html",
+    "lcov"
+  ],
+  "coverageDirectory": "./coverage-e2e"
 }

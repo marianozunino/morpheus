@@ -153,7 +153,7 @@ export class FsService {
 
     const latestVersion = fileNames.reduce((acc, fileName) => {
       const version = this.getMigrationVersionFromFileName(fileName);
-      return version > acc ? version : acc;
+      return version.localeCompare(acc) > 0 ? version : acc;
     }, STARTING_VERSION);
 
     // increment first digit

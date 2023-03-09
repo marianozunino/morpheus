@@ -135,6 +135,7 @@ describe('CliService', () => {
           State: MigrationState.APPLIED,
           Type: node.type,
           Version: node.version,
+          Source: node.source,
         },
       ]);
     });
