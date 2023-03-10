@@ -1,6 +1,6 @@
 import { TestingModule } from '@nestjs/testing';
 import { CommandTestFactory } from 'nest-commander-testing';
-import { exists, readdir, readFile, rename, rm, writeFile } from 'fs-extra';
+import { exists, readFile, rename, rm, writeFile } from 'fs-extra';
 import { AppModule } from '../src/app.module';
 import {
   cleanUp,
@@ -426,6 +426,9 @@ Issue the following command to create one:
       expect(loggerService.log).toHaveBeenCalledWith(
         `Executing migration: V1_11_0__${migration3}.cypher`,
       );
+
+      await CommandTestFactory.run(app, ['migrate']);
+      expect(loggerService.log).toHaveBeenCalledWith('Database is up to date');
     });
   });
 

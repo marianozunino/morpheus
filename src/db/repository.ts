@@ -117,10 +117,17 @@ export class Repository {
       .return(['migration', 'r'])
       .run<Node<Neo4jMigrationNode & Neo4jMigrationRelation>>();
 
-    return nodes.map((node) => ({
-      node: node.migration.properties,
-      relation: node.r.properties,
-    }));
+    return nodes
+      .map((node) => ({
+        node: node.migration.properties,
+        relation: node.r.properties,
+      }))
+      .sort((a, b) =>
+        a.node.version.localeCompare(b.node.version, undefined, {
+          numeric: true,
+          sensitivity: 'base',
+        }),
+      );
   }
 
   public getTransaction(): Transaction {

@@ -80,46 +80,57 @@ export class CliService {
 
   private printTable(info: MigrationInfo[], files: string[]): void {
     const timeZoneOffsetSeconds = new Date().getTimezoneOffset() * 60;
-    const table = files.map((fileName) => {
-      const migrationVersion =
-        this.fsService.getMigrationVersionFromFileName(fileName);
+    const table = files
+      .map((fileName) => {
+        const migrationVersion =
+          this.fsService.getMigrationVersionFromFileName(fileName);
 
-      const migrationDescription =
-        this.fsService.getMigrationDescriptionFromFileName(fileName);
+        const migrationDescription =
+          this.fsService.getMigrationDescriptionFromFileName(fileName);
 
-      const migration = info.find(
-        (migration) => migration.node.version === migrationVersion,
-      );
-
-      if (migration) {
-        const installedOn = convertAtToDate(
-          migration.relation.at,
-          timeZoneOffsetSeconds,
+        const migration = info.find(
+          (migration) => migration.node.version === migrationVersion,
         );
 
-        const executionTime = convertInToTime(migration.relation.in);
+        if (migration) {
+          const installedOn = convertAtToDate(
+            migration.relation.at,
+            timeZoneOffsetSeconds,
+          );
 
-        return {
-          Version: migration.node.version,
-          Description: migration.node.description,
-          Type: migration.node.type,
-          InstalledOn: installedOn.toLocaleString(),
-          ExecutionTime: executionTime,
-          State: MigrationState.APPLIED,
-          Source: migration.node.source,
-        };
-      } else {
-        return {
-          Version: migrationVersion,
-          Description: migrationDescription,
-          Type: 'CYPHER',
-          InstalledOn: 'N/A',
-          ExecutionTime: 'N/A',
-          State: MigrationState.PENDING,
-          Source: fileName,
-        };
-      }
-    });
+          const executionTime = convertInToTime(migration.relation.in);
+
+          return {
+            Version: migration.node.version,
+            Description: migration.node.description,
+            Type: migration.node.type,
+            InstalledOn: installedOn.toLocaleString(),
+            ExecutionTime: executionTime,
+            State: MigrationState.APPLIED,
+            Source: migration.node.source,
+          };
+        } else {
+          return {
+            Version: migrationVersion,
+            Description: migrationDescription,
+            Type: 'CYPHER',
+            InstalledOn: 'N/A',
+            ExecutionTime: 'N/A',
+            State: MigrationState.PENDING,
+            Source: fileName,
+          };
+        }
+      })
+      .sort((a, b) => {
+        // by installedOn
+        if (a.InstalledOn === 'N/A') {
+          return 1;
+        }
+        if (b.InstalledOn === 'N/A') {
+          return -1;
+        }
+        return a.InstalledOn > b.InstalledOn ? 1 : -1;
+      });
 
     console.table(table);
   }
