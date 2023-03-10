@@ -155,4 +155,4 @@ If you want to revert a migration, create a new migration and revert the changes
 
 ## How does neo4j keep track of the migrations?
 
-You can take a look at schema and explanation on [Michael's README](https://michael-simons.github.io/neo4j-migrations/current/#concepts_chain) there's a neat graph that shows the migration chain.
+You can take a look at schema and explanation on [Michael's README](https://michael-simons.github.io/neo4j-migrations/2.2.0/#concepts_chain) there's a neat graph that shows the migration chain.
