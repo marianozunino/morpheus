@@ -92,12 +92,15 @@ export class MigrationService {
       const version = this.fsService.getMigrationVersionFromFileName(fileName);
       return (
         this.latestAppliedVersion === BASELINE ||
-        version > this.latestAppliedVersion
+        version.localeCompare(this.latestAppliedVersion, undefined, {
+          numeric: true,
+          sensitivity: 'base',
+        }) > 0
       );
     });
 
     // sort migrations by version. eg: 1.1.1 < 1.1.2 < 1.2.1 < 2.1.1 < 2.9.1 < 2.10.1 < 2.11.0
-    const x = candidateMigrations.sort((a, b) => {
+    return candidateMigrations.sort((a, b) => {
       const versionA = this.fsService.getMigrationVersionFromFileName(a);
       const versionB = this.fsService.getMigrationVersionFromFileName(b);
       return versionA.localeCompare(versionB, undefined, {
@@ -105,8 +108,6 @@ export class MigrationService {
         sensitivity: 'base',
       });
     });
-
-    return x;
   }
 
   private async validateMigrationsIntegrity(): Promise<void> {
