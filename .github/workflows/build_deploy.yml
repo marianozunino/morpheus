@@ -12,7 +12,7 @@ jobs:
   # Build and deploy all the components
   build-deploy:
     name: Build-and-Deploy
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     steps:
       # Get deploy code
