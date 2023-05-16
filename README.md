@@ -5,6 +5,10 @@
 [![current-version](https://img.shields.io/badge/dynamic/json?label=current-version&query=%24.version&url=https%3A%2F%2Fraw.githubusercontent.com%2Fmarianozunino%2Fmorpheus%2Fmaster%2Fpackage.json)](https://npmjs.com/package/morpheus4j)
 <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="25" alt="Nest Logo" /></a>
 
+## ⚠️ Important/Notice
+
+- **Attention:** Version 2.x had a [bug](https://github.com/marianozunino/morpheus/issues/25) where the migrations versions where not being compared correctly. Please, don't use that version.
+
 # Morpheus
 
 Morpheus is a database migration tool for Neo4j written in Typescript.
