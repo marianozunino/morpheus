@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import {
   writeFileSync,
@@ -8,7 +8,7 @@ import {
   readFileSync,
 } from 'fs';
 import { join, resolve } from 'path';
-import { Neo4jConfig } from '../config/config-loader';
+import { Neo4jConfig, Neo4jScheme } from '../config/config-loader';
 import {
   STARTING_VERSION,
   GLOBAL_CONFIG_TOKEN,
@@ -24,16 +24,17 @@ import mollusc from 'mollusc';
 
 @Injectable()
 export class FsService {
-  private _migrationsPath: string;
-
   constructor(
     private readonly lazyModuleLoader: LazyModuleLoader,
     private readonly logger: LoggerService,
+    @Optional()
+    @Inject(GLOBAL_CONFIG_TOKEN)
+    private config?: Neo4jConfig,
   ) {}
 
   private async getMigrationsPath(): Promise<string> {
-    if (this._migrationsPath) {
-      return this._migrationsPath;
+    if (this.config?.migrationsPath) {
+      return this.config.migrationsPath;
     }
     const { ConfigModule } = await import('../config/config.module');
     const moduleRef = await this.lazyModuleLoader.load(() => ConfigModule);
@@ -41,8 +42,8 @@ export class FsService {
     await import('../config/config.provider');
     const loadedCfg =
       moduleRef.get<ConfigType<typeof config>>(GLOBAL_CONFIG_TOKEN);
-    this._migrationsPath = loadedCfg?.migrationsPath ?? DEFAULT_MIGRATIONS_PATH;
-    return this._migrationsPath;
+    this.config = loadedCfg;
+    return this.config.migrationsPath;
   }
 
   public async generateMigration(fileName: string) {
@@ -86,7 +87,7 @@ export class FsService {
       port: 7687,
       username: 'neo4j',
       password: 'neo4j',
-      scheme: 'neo4j',
+      scheme: Neo4jScheme.NEO4J,
       migrationsPath: DEFAULT_MIGRATIONS_PATH,
     };
     writeFileSync(MORPHEUS_FILE_NAME, JSON.stringify(defaultConfig, null, 2));

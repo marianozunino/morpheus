@@ -1,14 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { FsService } from '../fs.service';
 import fs from 'fs';
-import {
-  DEFAULT_MIGRATIONS_PATH,
-  MORPHEUS_FILE_NAME,
-} from '../../app.constants';
 import { LazyModuleLoader } from '@nestjs/core';
 import { Chance } from 'chance';
 import { LoggerService } from '../../logger.service';
 import mollusc from 'mollusc';
+import { Neo4jConfig, Neo4jScheme } from '../../config/config-loader';
+import { DEFAULT_MIGRATIONS_PATH } from '../../app.constants';
 
 const lazyModuleLoader = jest.fn();
 
@@ -33,12 +31,14 @@ describe('FsService', () => {
   let service: FsService;
   const chance = new Chance();
   let loggerService: jest.Mocked<LoggerService>;
-  const config = {
-    scheme: 'neo4j',
+
+  const config: Neo4jConfig = {
+    scheme: Neo4jScheme.NEO4J,
     host: 'localhost',
     port: 7687,
     username: 'neo4j',
     password: 'neo4j',
+    migrationsPath: DEFAULT_MIGRATIONS_PATH,
   };
 
   beforeEach(async () => {

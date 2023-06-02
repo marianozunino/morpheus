@@ -59,7 +59,9 @@ describe('Morpheus CLI (e2e)', () => {
       await CommandTestFactory.run(app, ['info']);
 
       expect(loggerService.error).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to connect to server.'),
+        expect.stringContaining(
+          'The client is unauthorized due to authentication failure.',
+        ),
       );
     });
 
@@ -452,7 +454,7 @@ Issue the following command to create one:
       expect(loggerService.error).toHaveBeenCalled();
       expect(loggerService.error).toHaveBeenCalledWith(
         expect.stringContaining(
-          'Could not perform discovery. No routing servers available. ',
+          'The client is unauthorized due to authentication failure.',
         ),
       );
     });

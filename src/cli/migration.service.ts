@@ -1,33 +1,34 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { LazyModuleLoader } from '@nestjs/core';
+import { MigrationInfo, Neo4jMigrationNode } from '../types';
+
 import { generateChecksum } from '../utils';
 import { BASELINE } from '../app.constants';
 import { Repository } from '../db/repository';
-import { MigrationInfo, Neo4jMigrationNode } from '../types';
 import { FsService } from './fs.service';
-import { LazyModuleLoader } from '@nestjs/core';
 import { LoggerService } from '../logger.service';
 
 @Injectable()
 export class MigrationService {
   private latestAppliedVersion: string;
-  private _repository: Repository;
 
   constructor(
     private readonly lazyModuleLoader: LazyModuleLoader,
     private readonly fsService: FsService,
     private readonly logger: LoggerService,
+    @Optional() private repository?: Repository,
   ) {}
 
   private async getRepository(): Promise<Repository> {
-    if (this._repository) {
-      return this._repository;
+    if (this.repository) {
+      return this.repository;
     }
     const { DbModule } = await import('../db/db.module');
     const moduleRef = await this.lazyModuleLoader.load(() => DbModule);
 
     await import('../db/repository');
-    this._repository = moduleRef.get<Repository>(Repository);
-    return this._repository;
+    this.repository = moduleRef.get<Repository>(Repository);
+    return this.repository;
   }
 
   public async migrate() {

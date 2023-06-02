@@ -1,15 +1,16 @@
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import Joi from 'joi';
-import { MORPHEUS_FILE_NAME } from '../app.constants';
+import { DEFAULT_MIGRATIONS_PATH, MORPHEUS_FILE_NAME } from '../app.constants';
 
-export type Neo4jScheme =
-  | 'neo4j'
-  | 'neo4j+s'
-  | 'neo4j+ssc'
-  | 'bolt'
-  | 'bolt+s'
-  | 'bolt+ssc';
+export enum Neo4jScheme {
+  NEO4J = 'neo4j',
+  NEO4J_S = 'neo4j+s',
+  NEO4J_SSC = 'neo4j+ssc',
+  BOLT = 'bolt',
+  BOLT_S = 'bolt+s',
+  BOLT_SSC = 'bolt+ssc',
+}
 
 export interface Neo4jConfig {
   database?: string;
@@ -46,7 +47,8 @@ export class ConfigLoader {
       port: Number(process.env.MORPHEUS_PORT),
       username: process.env.MORPHEUS_USERNAME,
       password: process.env.MORPHEUS_PASSWORD,
-      migrationsPath: process.env.MORPHEUS_MIGRATIONS_PATH,
+      migrationsPath:
+        process.env.MORPHEUS_MIGRATIONS_PATH ?? DEFAULT_MIGRATIONS_PATH,
     };
     this.validateConfig(config);
     return config;
@@ -64,13 +66,15 @@ export class ConfigLoader {
     try {
       const configAsJson = JSON.parse(config);
       this.validateConfig(configAsJson);
+      configAsJson.migrationsPath =
+        configAsJson.migrationsPath ?? DEFAULT_MIGRATIONS_PATH;
       return configAsJson;
     } catch (error) {
       throw new Error("Couldn't parse .morpheus.json file");
     }
   }
 
-  private static validateConfig(config: Neo4jConfig): void {
+  public static validateConfig(config: Neo4jConfig): void {
     const validationResult = Joi.object({
       scheme: Joi.string()
         .valid('neo4j', 'neo4j+s', 'neo4j+ssc', 'bolt', 'bolt+s', 'bolt+ssc')
