@@ -13,10 +13,10 @@ export class MigrationService {
   private latestAppliedVersion: string;
 
   constructor(
-    private readonly lazyModuleLoader: LazyModuleLoader,
     private readonly fsService: FsService,
     private readonly logger: LoggerService,
     @Optional() private repository?: Repository,
+    @Optional() private readonly lazyModuleLoader?: LazyModuleLoader,
   ) {}
 
   private async getRepository(): Promise<Repository> {

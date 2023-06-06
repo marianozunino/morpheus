@@ -25,11 +25,13 @@ import mollusc from 'mollusc';
 @Injectable()
 export class FsService {
   constructor(
-    private readonly lazyModuleLoader: LazyModuleLoader,
     private readonly logger: LoggerService,
     @Optional()
     @Inject(GLOBAL_CONFIG_TOKEN)
     private config?: Neo4jConfig,
+    @Inject(LazyModuleLoader)
+    @Optional()
+    private readonly lazyModuleLoader?: LazyModuleLoader,
   ) {}
 
   private async getMigrationsPath(): Promise<string> {

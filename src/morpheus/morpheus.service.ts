@@ -3,7 +3,6 @@ import { MODULE_OPTIONS_TOKEN } from './morpheus.module-definition';
 import { MorpheusModuleOptions } from './morpheus-module.options';
 import { ConfigLoader, Neo4jConfig } from '../config/config-loader';
 import { MigrationService } from '../cli/migration.service';
-import { LazyModuleLoader } from '@nestjs/core';
 import { FsService } from '../cli/fs.service';
 import { Repository } from '../db/repository';
 import { getDatabaseConnection } from '../db/neo4j';
@@ -13,7 +12,6 @@ import { LoggerService } from '../logger.service';
 export class MorpheusService {
   constructor(
     private readonly logger: LoggerService,
-    private readonly lazyModuleLoader: LazyModuleLoader,
     @Inject(MODULE_OPTIONS_TOKEN)
     @Optional()
     private readonly options?: MorpheusModuleOptions,
@@ -62,11 +60,10 @@ export class MorpheusService {
 
   private async getDependencies(config: Neo4jConfig) {
     const connection = await getDatabaseConnection(config);
-    const fsService = new FsService(this.lazyModuleLoader, this.logger, config);
+    const fsService = new FsService(this.logger, config);
     const repository = new Repository(connection);
 
     const migrationService = new MigrationService(
-      this.lazyModuleLoader,
       fsService,
       this.logger,
       repository,

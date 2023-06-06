@@ -47,8 +47,7 @@ export class ConfigLoader {
       port: Number(process.env.MORPHEUS_PORT),
       username: process.env.MORPHEUS_USERNAME,
       password: process.env.MORPHEUS_PASSWORD,
-      migrationsPath:
-        process.env.MORPHEUS_MIGRATIONS_PATH ?? DEFAULT_MIGRATIONS_PATH,
+      migrationsPath: process.env.MORPHEUS_MIGRATIONS_PATH,
     };
     this.validateConfig(config);
     return config;
@@ -66,8 +65,6 @@ export class ConfigLoader {
     try {
       const configAsJson = JSON.parse(config);
       this.validateConfig(configAsJson);
-      configAsJson.migrationsPath =
-        configAsJson.migrationsPath ?? DEFAULT_MIGRATIONS_PATH;
       return configAsJson;
     } catch (error) {
       throw new Error("Couldn't parse .morpheus.json file");
@@ -85,6 +82,12 @@ export class ConfigLoader {
       password: Joi.string().required(),
       migrationsPath: Joi.string().optional(),
     }).validate(config);
+
+    // apply default migrations path
+    if (!config.migrationsPath) {
+      config.migrationsPath = DEFAULT_MIGRATIONS_PATH;
+    }
+
     if (validationResult.error?.details?.length > 0) {
       validationResult.error.details.forEach((detail) => {
         console.error(detail.message);
