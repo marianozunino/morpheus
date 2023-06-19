@@ -9,6 +9,7 @@ import {
   MORPHEUS_FILE_NAME,
 } from '../src/app.constants';
 import { writeFile } from 'fs-extra';
+import { Connection } from 'cypher-query-builder';
 
 jest.mock('../src/logger.service');
 
@@ -115,48 +116,220 @@ describe('Morpheus API (e2e)', () => {
   });
 
   describe('MorpheusService', () => {
+    let connection: Connection;
+
+    afterEach(async () => {
+      if (connection) {
+        await connection.close();
+      }
+    });
+
     it('must be defined', () => {
       expect(morpheusService).toBeDefined();
     });
-
-    it('must have a runMigrationsFor method', () => {
-      expect(morpheusService.runMigrationsFor).toBeDefined();
-    });
-
-    it('must execute the migrations', async () => {
-      const config = testUtils.configFromEnv();
-
-      await testUtils.createMigrationFile();
-      await morpheusService.runMigrationsFor(config);
-
-      expect(loggerService.error).not.toHaveBeenCalled();
-      expect(loggerService.debug).toHaveBeenCalledWith(
-        `Running migrations for ${config.host}:${config.port}`,
-      );
-      expect(loggerService.debug).toHaveBeenCalledWith(`Executing migrations`);
-      expect(loggerService.debug).toHaveBeenCalledWith(`Closing connection`);
-      expect(loggerService.log).toHaveBeenCalledWith(
-        `Executing migration: V0_0_0__1.cypher`,
-      );
-    });
-
-    it('shows the db name in the logs if provided', async () => {
-      const config = testUtils.configFromEnv({
-        database: 'test',
+    describe('runMigrationsFor', () => {
+      it('must have a runMigrationsFor method', () => {
+        expect(morpheusService.runMigrationsFor).toBeDefined();
       });
 
-      await testUtils.createMigrationFile();
-      await morpheusService.runMigrationsFor(config);
+      it('must execute the migrations', async () => {
+        const config = testUtils.configFromEnv();
 
-      expect(loggerService.error).not.toHaveBeenCalled();
-      expect(loggerService.debug).toHaveBeenCalledWith(
-        `Running migrations for ${config.host}:${config.port}/${config.database}`,
-      );
-      expect(loggerService.debug).toHaveBeenCalledWith(`Executing migrations`);
-      expect(loggerService.debug).toHaveBeenCalledWith(`Closing connection`);
-      expect(loggerService.log).toHaveBeenCalledWith(
-        `Executing migration: V0_0_0__1.cypher`,
-      );
+        await testUtils.createMigrationFile();
+        await morpheusService.runMigrationsFor(config);
+
+        expect(loggerService.error).not.toHaveBeenCalled();
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Running migrations for ${config.host}:${config.port}`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Executing migrations`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(`Closing connection`);
+        expect(loggerService.log).toHaveBeenCalledWith(
+          `Executing migration: V0_0_0__1.cypher`,
+        );
+      });
+
+      it('shows the db name in the logs if provided', async () => {
+        const config = testUtils.configFromEnv({
+          database: 'test',
+        });
+
+        await testUtils.createMigrationFile();
+        await morpheusService.runMigrationsFor(config);
+
+        expect(loggerService.error).not.toHaveBeenCalled();
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Running migrations for ${config.host}:${config.port}/${config.database}`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Executing migrations`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(`Closing connection`);
+        expect(loggerService.log).toHaveBeenCalledWith(
+          `Executing migration: V0_0_0__1.cypher`,
+        );
+      });
+
+      it("uses the provided connection and does't close it", async () => {
+        await testUtils.createMigrationFile();
+        const config = testUtils.configFromEnv({
+          database: 'test',
+        });
+
+        connection = testUtils.getConnectionForConfig(config);
+
+        await morpheusService.runMigrationsFor(config, connection);
+
+        expect(loggerService.error).not.toHaveBeenCalled();
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Running migrations for ${config.host}:${config.port}/${config.database}`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Executing migrations`,
+        );
+        expect(loggerService.debug).not.toHaveBeenCalledWith(
+          `Closing connection`,
+        );
+
+        expect(loggerService.log).toHaveBeenCalledWith(
+          `Executing migration: V0_0_0__1.cypher`,
+        );
+      });
+    });
+
+    describe('cleanDatabase', () => {
+      it('must have a cleanDatabase method', () => {
+        expect(morpheusService.cleanDatabase).toBeDefined();
+      });
+
+      it('must clean the database', async () => {
+        const config = testUtils.configFromEnv();
+
+        await testUtils.createMigrationFile();
+        await morpheusService.runMigrationsFor(config);
+
+        expect(loggerService.error).not.toHaveBeenCalled();
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Running migrations for ${config.host}:${config.port}`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Executing migrations`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(`Closing connection`);
+
+        await morpheusService.cleanDatabase(config);
+
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Cleaning database ${config.host}:${config.port}`,
+        );
+
+        expect(loggerService.debug).toHaveBeenCalledWith(`Dropping chain`);
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Dropping constraints`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(`Closing connection`);
+      });
+
+      it('shows the db name in the logs if provided', async () => {
+        const config = testUtils.configFromEnv({
+          database: 'test',
+        });
+
+        await testUtils.createMigrationFile();
+        await morpheusService.runMigrationsFor(config);
+
+        expect(loggerService.error).not.toHaveBeenCalled();
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Running migrations for ${config.host}:${config.port}/${config.database}`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Executing migrations`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(`Closing connection`);
+
+        await morpheusService.cleanDatabase(config);
+
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Cleaning database ${config.host}:${config.port}/${config.database}`,
+        );
+
+        expect(loggerService.debug).toHaveBeenCalledWith(`Dropping chain`);
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Dropping constraints`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(`Closing connection`);
+      });
+
+      it("uses the provided connection and does't close it", async () => {
+        await testUtils.createMigrationFile();
+        const config = testUtils.configFromEnv({
+          database: 'test',
+        });
+
+        connection = testUtils.getConnectionForConfig(config);
+
+        await morpheusService.runMigrationsFor(config, connection);
+
+        expect(loggerService.error).not.toHaveBeenCalled();
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Running migrations for ${config.host}:${config.port}/${config.database}`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Executing migrations`,
+        );
+        expect(loggerService.debug).not.toHaveBeenCalledWith(
+          `Closing connection`,
+        );
+
+        await morpheusService.cleanDatabase(config, connection);
+
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Cleaning database ${config.host}:${config.port}/${config.database}`,
+        );
+
+        expect(loggerService.debug).toHaveBeenCalledWith(`Dropping chain`);
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Dropping constraints`,
+        );
+        expect(loggerService.debug).not.toHaveBeenCalledWith(
+          `Closing connection`,
+        );
+      });
+
+      it("doesn't drop the constraints if the flag is set to false", async () => {
+        const config = testUtils.configFromEnv();
+
+        await testUtils.createMigrationFile();
+        await morpheusService.runMigrationsFor(config);
+
+        expect(loggerService.error).not.toHaveBeenCalled();
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Running migrations for ${config.host}:${config.port}`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Executing migrations`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(`Closing connection`);
+
+        await morpheusService.cleanDatabase({
+          ...config,
+          cleanConfig: {
+            dropConstraints: false,
+          },
+        });
+
+        expect(loggerService.debug).toHaveBeenCalledWith(
+          `Cleaning database ${config.host}:${config.port}`,
+        );
+
+        expect(loggerService.debug).toHaveBeenCalledWith(`Dropping chain`);
+        expect(loggerService.debug).not.toHaveBeenCalledWith(
+          `Dropping constraints`,
+        );
+        expect(loggerService.debug).toHaveBeenCalledWith(`Closing connection`);
+      });
     });
   });
 });

@@ -599,7 +599,7 @@ Issue the following command to create one:
     });
   });
 
-  describe.only('clean command', () => {
+  describe('clean command', () => {
     it('should fail to clean if .morpheus.json does not exist', async () => {
       await CommandTestFactory.run(app, ['clean']);
 

@@ -82,7 +82,7 @@ export class ConfigLoader {
       password: Joi.string().required(),
       migrationsPath: Joi.string().optional(),
       database: Joi.string().optional(),
-    }).validate(config);
+    }).validate(config, { allowUnknown: true });
 
     // apply default migrations path
     if (!config.migrationsPath) {
