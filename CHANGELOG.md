@@ -1,3 +1,10 @@
+# [3.1.0](https://github.com/marianozunino/morpheus/compare/v3.0.2...v3.1.0) (2023-06-19)
+
+
+### Features
+
+* expose MorpheusService [#30](https://github.com/marianozunino/morpheus/issues/30) ([469e232](https://github.com/marianozunino/morpheus/commit/469e232db001933818cbb72a9069fd6ba9f17804))
+
 ## [3.0.2](https://github.com/marianozunino/morpheus/compare/v3.0.1...v3.0.2) (2023-03-10)
 
 
