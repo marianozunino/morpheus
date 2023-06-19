@@ -1,23 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { cleanUp, closeNeo4j, openNeo4j } from './utils';
-import { MorpheusModule } from '../src/morpheus';
+import { MorpheusModule, MorpheusService, Neo4jScheme } from '../src/morpheus';
 import { LoggerService } from '../src/logger.service';
 import { INestApplication } from '@nestjs/common';
 import * as testUtils from './utils';
 import {
   DEFAULT_MIGRATIONS_PATH,
-  GLOBAL_CONFIG_TOKEN,
   MORPHEUS_FILE_NAME,
 } from '../src/app.constants';
 import { writeFile } from 'fs-extra';
-import { LazyModuleLoader } from '@nestjs/core';
 
 jest.mock('../src/logger.service');
 
 describe('Morpheus API (e2e)', () => {
   let app: INestApplication;
   let loggerService: jest.Mocked<LoggerService>;
-  let lazyModuleLoader: jest.Mocked<LazyModuleLoader>;
+  let morpheusService: MorpheusService;
 
   beforeEach(async () => {
     await cleanUp();
@@ -27,6 +25,7 @@ describe('Morpheus API (e2e)', () => {
       imports: [MorpheusModule],
     }).compile();
     loggerService = module.get(LoggerService);
+    morpheusService = module.get(MorpheusService);
 
     app = module.createNestApplication();
   });
@@ -81,6 +80,7 @@ describe('Morpheus API (e2e)', () => {
     it('fails to start if there is a .morpheus.json but cannot connect to the database', async () => {
       await testUtils.createNeo4jConfigFile({
         host: 'localhost',
+        port: 9999,
       });
       expect.assertions(2);
       try {
@@ -111,6 +111,52 @@ describe('Morpheus API (e2e)', () => {
       } catch (e) {
         console.log(e);
       }
+    });
+  });
+
+  describe('MorpheusService', () => {
+    it('must be defined', () => {
+      expect(morpheusService).toBeDefined();
+    });
+
+    it('must have a runMigrationsFor method', () => {
+      expect(morpheusService.runMigrationsFor).toBeDefined();
+    });
+
+    it('must execute the migrations', async () => {
+      const config = testUtils.configFromEnv();
+
+      await testUtils.createMigrationFile();
+      await morpheusService.runMigrationsFor(config);
+
+      expect(loggerService.error).not.toHaveBeenCalled();
+      expect(loggerService.debug).toHaveBeenCalledWith(
+        `Running migrations for ${config.host}:${config.port}`,
+      );
+      expect(loggerService.debug).toHaveBeenCalledWith(`Executing migrations`);
+      expect(loggerService.debug).toHaveBeenCalledWith(`Closing connection`);
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Executing migration: V0_0_0__1.cypher`,
+      );
+    });
+
+    it('shows the db name in the logs if provided', async () => {
+      const config = testUtils.configFromEnv({
+        database: 'test',
+      });
+
+      await testUtils.createMigrationFile();
+      await morpheusService.runMigrationsFor(config);
+
+      expect(loggerService.error).not.toHaveBeenCalled();
+      expect(loggerService.debug).toHaveBeenCalledWith(
+        `Running migrations for ${config.host}:${config.port}/${config.database}`,
+      );
+      expect(loggerService.debug).toHaveBeenCalledWith(`Executing migrations`);
+      expect(loggerService.debug).toHaveBeenCalledWith(`Closing connection`);
+      expect(loggerService.log).toHaveBeenCalledWith(
+        `Executing migration: V0_0_0__1.cypher`,
+      );
     });
   });
 });

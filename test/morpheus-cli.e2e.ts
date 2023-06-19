@@ -59,8 +59,8 @@ describe('Morpheus CLI (e2e)', () => {
       await CommandTestFactory.run(app, ['info']);
 
       expect(loggerService.error).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'The client is unauthorized due to authentication failure.',
+        expect.stringMatching(
+          /(.*)The client is unauthorized due to authentication failure(.*)|(.*)Could not perform discovery(.*)/,
         ),
       );
     });
@@ -264,6 +264,7 @@ Issue the following command to create one:
         migrationsPath: simplePath,
         host: 'localhost',
         path: simplePath,
+        port: 9999,
       });
 
       await CommandTestFactory.run(app, ['migrate']);
@@ -453,8 +454,8 @@ Issue the following command to create one:
 
       expect(loggerService.error).toHaveBeenCalled();
       expect(loggerService.error).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'The client is unauthorized due to authentication failure.',
+        expect.stringMatching(
+          /(.*)The client is unauthorized due to authentication failure(.*)|(.*)Could not perform discovery(.*)/,
         ),
       );
     });

@@ -74,7 +74,9 @@ export class MorpheusService {
   public async runMigrationsFor(config: Neo4jConfig): Promise<void> {
     ConfigLoader.validateConfig(config);
     this.logger.debug(
-      'Running migrations for config ' + JSON.stringify(config),
+      `Running migrations for ${config.host}:${config.port}${
+        config.database ? `/${config.database}` : ''
+      }`,
     );
     await this.executeMigrations(config);
   }

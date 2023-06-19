@@ -81,6 +81,7 @@ export class ConfigLoader {
       username: Joi.string().required(),
       password: Joi.string().required(),
       migrationsPath: Joi.string().optional(),
+      database: Joi.string().optional(),
     }).validate(config);
 
     // apply default migrations path
