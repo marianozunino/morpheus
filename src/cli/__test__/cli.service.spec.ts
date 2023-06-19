@@ -238,4 +238,18 @@ describe('CliService', () => {
       expect(migrationService.migrate).toBeCalled();
     });
   });
+
+  describe('clean', () => {
+    it('should clean the database - keep constraints', async () => {
+      await service.clean(false);
+      expect(repository.dropChain).toBeCalled();
+      expect(repository.dropConstraints).not.toBeCalled();
+    });
+
+    it('should clean the database - drop constraints', async () => {
+      await service.clean(true);
+      expect(repository.dropChain).toBeCalled();
+      expect(repository.dropConstraints).toBeCalled();
+    });
+  });
 });

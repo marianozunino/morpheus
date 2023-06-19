@@ -49,6 +49,21 @@ export const openNeo4j = async (): Promise<void> => {
   });
 };
 
+export const getConnectionForConfig = (
+  config: Partial<Neo4jConfig>,
+): Connection => {
+  const host = config.host ?? process.env.TEST_NEO4J_HOST;
+  const port = config.port ?? process.env.TEST_NEO4J_PORT;
+  const username = config.username ?? process.env.TEST_NEO4J_USERNAME;
+  const password = config.password ?? process.env.TEST_NEO4J_PASSWORD;
+  const scheme = config.scheme ?? process.env.TEST_NEO4J_SCHEME;
+
+  return new Connection(`${scheme}://${host}:${port}`, {
+    username: username,
+    password: password,
+  });
+};
+
 export const createNeo4jConfigFile = async (
   neo4jConfig?: Partial<
     Neo4jConfig & {

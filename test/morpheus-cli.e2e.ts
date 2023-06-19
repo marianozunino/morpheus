@@ -598,4 +598,73 @@ Issue the following command to create one:
       ]);
     });
   });
+
+  describe('clean command', () => {
+    it('should fail to clean if .morpheus.json does not exist', async () => {
+      await CommandTestFactory.run(app, ['clean']);
+
+      expect(loggerService.error).toHaveBeenCalled();
+      expect(loggerService.error).toHaveBeenCalledWith(
+        `Couldn't find a valid .morpheus.json file.
+Issue the following command to create one:
+> morpheus init`,
+      );
+      expect(exitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('should fail to clean if it cannot connect to the database', async () => {
+      await CommandTestFactory.run(app, ['init']);
+      await CommandTestFactory.run(app, ['clean']);
+
+      expect(loggerService.error).toHaveBeenCalled();
+      expect(loggerService.error).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /(.*)The client is unauthorized due to authentication failure(.*)|(.*)Could not perform discovery(.*)/,
+        ),
+      );
+    });
+
+    it('should clean the database - drop nodes and constraints', async () => {
+      await createNeo4jConfigFile({
+        path: simplePath,
+      });
+      const migration1 = chance.word();
+      await CommandTestFactory.run(app, ['create', migration1]);
+      await CommandTestFactory.run(app, ['migrate']);
+
+      await CommandTestFactory.run(app, ['clean']);
+
+      expect(loggerService.log).toHaveBeenCalledWith('Dropped chain');
+      expect(loggerService.log).toHaveBeenCalledWith('Dropped constraints');
+    });
+
+    it('should clean the database - drop nodes and keep constraints', async () => {
+      await createNeo4jConfigFile({
+        path: simplePath,
+      });
+      const migration1 = chance.word();
+      await CommandTestFactory.run(app, ['create', migration1]);
+      await CommandTestFactory.run(app, ['migrate']);
+
+      await CommandTestFactory.run(app, ['clean', '-d', 'false']);
+
+      expect(loggerService.log).toHaveBeenCalledWith('Dropped chain');
+      expect(loggerService.log).not.toHaveBeenCalledWith('Dropped constraints');
+    });
+
+    it('should fail if the drop-constraints flag is not a boolean', async () => {
+      await createNeo4jConfigFile({
+        path: simplePath,
+      });
+      const migration1 = chance.word();
+      await CommandTestFactory.run(app, ['create', migration1]);
+      await CommandTestFactory.run(app, ['migrate']);
+
+      await CommandTestFactory.run(app, ['clean', '-d', 'foo']);
+
+      expect(loggerService.error).toHaveBeenCalledWith(
+        `Invalid value for boolean option drop-constraints: foo`,
+      );
+    });
+  });
 });
