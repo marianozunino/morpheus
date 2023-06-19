@@ -5,19 +5,36 @@
 [![current-version](https://img.shields.io/badge/dynamic/json?label=current-version&query=%24.version&url=https%3A%2F%2Fraw.githubusercontent.com%2Fmarianozunino%2Fmorpheus%2Fmaster%2Fpackage.json)](https://npmjs.com/package/morpheus4j)
 <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="25" alt="Nest Logo" /></a>
 
-## ⚠️ Important/Notice
+### Table of Contents
+
+- [⚠️ Important/Notice](#---important-notice)
+- [Morpheus](#morpheus)
+    + [About](#about)
+- [Installation](#installation)
+- [Usage](#usage)
+  * [Initial Configuration](#initial-configuration)
+  * [Create Migrations](#create-migrations)
+  * [Run Migrations](#run-migrations)
+- [NestJs Integration <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="25" alt="Nest Logo" /></a>](#nestjs-integration)
+  * [Module Registration](#module-registration)
+  * [Do you have multiple instances that you want to run migrations on?](#do-you-have-multiple-instances-that-you-want-to-run-migrations-on-)
+- [How it works](#how-it-works)
+  * [How does neo4j keep track of the migrations?](#how-does-neo4j-keep-track-of-the-migrations-)
+
+# ⚠️ Important/Notice
 
 - **Attention:** Version 2.x had a [bug](https://github.com/marianozunino/morpheus/issues/25) where the migrations versions where not being compared correctly. Please, don't use that version.
 
 # Morpheus
 
+### About
 Morpheus is a database migration tool for Neo4j written in Typescript.
 
 > Morpheus is a modern, open-source, database migration tool for [Neo4j](http://neo4j.com).
 > It is designed to be a simple, intuitive tool for database migrations.
 > It is inspired by [Michael Simons tool for Java](https://github.com/michael-simons/neo4j-migrations).
 
-### This project has been tested with
+This project has been tested with
 
 > - Neo4j 4.4.4
 > - Neo4j 5.x
@@ -97,10 +114,7 @@ npm run morpheus migrate
 
 This will run all migrations in the `neo4j/migrations` directory.
 
-<h1>
-  NestJs Integration
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="25" alt="Nest Logo" /></a>
-</h1>
+# NestJs Integration <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="25" alt="Nest Logo" /></a>
 
 You can use Morpheus with the [NestJs](https://nestjs.com) framework.
 
@@ -110,6 +124,8 @@ You can use Morpheus with the [NestJs](https://nestjs.com) framework.
 The biggest difference is that you don't need to create a `.morpheus.json` file and you can use any name for the ENV variables.
 
 You can instantiate the module using the `forRoot` or `forRootAsync` methods.
+
+### Module registration
 
 ```ts
 import { Module } from '@nestjs/common';
@@ -144,6 +160,10 @@ import { MorpheusModule } from 'morpheus4j';
 })
 export class AppModule {}
 ```
+
+#### Do you have multiple instances that you want to run migrations on?
+
+You can check out this issue [Multiple instances](https://github.com/marianozunino/morpheus/issues/30) for more information.
 
 # How it works
 
