@@ -65,8 +65,10 @@ export class CliService {
   public async clean(dropConstraints: boolean): Promise<void> {
     const repository = await this.getRepository();
     await repository.dropChain();
+    this.logger.log('Dropped chain');
     if (dropConstraints) {
       await this.repository.dropConstraints();
+      this.logger.log('Dropped constraints');
     }
   }
 

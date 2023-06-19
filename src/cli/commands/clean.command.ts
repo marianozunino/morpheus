@@ -10,7 +10,7 @@ interface CleanCommandOptions {
 @Command({
   name: 'clean',
   description:
-    'It will remove Neo4j-Migrations related nodes and relationships.',
+    'It will remove Neo4j-Migrations related nodes, relationships and constraints.',
 })
 export class CleanCommand extends CommandRunner {
   public constructor(
@@ -22,7 +22,7 @@ export class CleanCommand extends CommandRunner {
   }
 
   async run(_args: string[], options: CleanCommandOptions): Promise<void> {
-    const { dropConstraints = false } = options;
+    const { dropConstraints } = options;
     await this.executionWrapperService.asyncExecutionWrapper(
       async () => await this.cliService.clean(dropConstraints),
     );
@@ -30,7 +30,8 @@ export class CleanCommand extends CommandRunner {
 
   @Option({
     flags: '-d, --drop-constraints [boolean]',
-    description: 'If set to true, it will drop all constraints.',
+    description: 'If set to false, constraints will not be dropped.',
+    defaultValue: true,
   })
   parseBoolean(val: string): boolean {
     try {
