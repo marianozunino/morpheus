@@ -51,7 +51,7 @@ describe('Morpheus CLI (e2e)', () => {
     it('fails if the database is not reachable', async () => {
       process.env.MORPHEUS_SCHEME = 'bolt';
       process.env.MORPHEUS_HOST = 'localhost';
-      process.env.MORPHEUS_PORT = '7687';
+      process.env.MORPHEUS_PORT = '8888';
       process.env.MORPHEUS_USERNAME = 'neo4j';
       process.env.MORPHEUS_PASSWORD = 'neo4j';
       process.env.MORPHEUS_MIGRATIONS_PATH = 'migrations';
@@ -59,9 +59,7 @@ describe('Morpheus CLI (e2e)', () => {
       await CommandTestFactory.run(app, ['info']);
 
       expect(loggerService.error).toHaveBeenCalledWith(
-        expect.stringMatching(
-          /(.*)The client is unauthorized due to authentication failure(.*)|(.*)Could not perform discovery(.*)/,
-        ),
+        expect.stringMatching(/Failed to connect to server(.*)/),
       );
     });
 
