@@ -133,4 +133,29 @@ export class Repository {
   public getTransaction(): Transaction {
     return this.neo4j.session().beginTransaction() as unknown as Transaction;
   }
+
+  public async dropChain(): Promise<void> {
+    const trx = this.getTransaction();
+    await this.executeQueries(
+      [
+        `MATCH (${MIGRATION_LABEL})-[r:MIGRATED_TO]->(migration:${MIGRATION_LABEL}) DETACH DELETE migration, r`,
+        `MATCH (b:${MIGRATION_LABEL} {version:"${BASELINE}"}) DETACH DELETE b`,
+      ],
+      trx,
+    );
+    await trx.commit();
+  }
+
+  public async dropConstraints(): Promise<void> {
+    const trx = this.getTransaction();
+    await this.executeQueries(
+      [
+        `DROP CONSTRAINT unique_version_${MIGRATION_LABEL} IF exists`,
+        `DROP INDEX idx_version_${MIGRATION_LABEL} IF exists`,
+      ],
+      trx,
+    );
+
+    await trx.commit();
+  }
 }

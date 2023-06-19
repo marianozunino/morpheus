@@ -3,6 +3,7 @@ import { FsService } from './fs.service';
 import { MigrationService } from './migration.service';
 import { CliService } from './cli.service';
 import {
+  CleanCommand,
   CreateCommand,
   InfoCommand,
   InitCommand,
@@ -17,6 +18,7 @@ import { ExecutionWrapperService } from './execution-wrapper.service';
     InfoCommand,
     CreateCommand,
     MigrateCommand,
+    CleanCommand,
     CliService,
     MigrationService,
     FsService,

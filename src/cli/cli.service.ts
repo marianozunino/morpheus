@@ -62,6 +62,14 @@ export class CliService {
     this.printTable(executedMigrations, files);
   }
 
+  public async clean(dropConstraints: boolean): Promise<void> {
+    const repository = await this.getRepository();
+    await repository.dropChain();
+    if (dropConstraints) {
+      await this.repository.dropConstraints();
+    }
+  }
+
   private printExistingMigrations(info: MigrationInfo[]) {
     this.logger.log('Existing migrations:');
 
