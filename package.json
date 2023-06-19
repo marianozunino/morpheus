@@ -1,6 +1,6 @@
 {
   "name": "morpheus4j",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "main": "dist/morpheus/index.js",
   "types": "dist/morpheus/index.d.ts",
   "description": "Morpheus is a migration tool for Neo4j. It aims to be a simple and intuitive way to migrate your database.",

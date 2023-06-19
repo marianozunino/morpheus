@@ -1,3 +1,10 @@
+# [3.2.0](https://github.com/marianozunino/morpheus/compare/v3.1.0...v3.2.0) (2023-06-19)
+
+
+### Features
+
+* add clean command ([0a8fc6f](https://github.com/marianozunino/morpheus/commit/0a8fc6f7d8ded5477f11f7b70ca14b826d4b7dbd))
+
 # [3.1.0](https://github.com/marianozunino/morpheus/compare/v3.0.2...v3.1.0) (2023-06-19)
 
 
