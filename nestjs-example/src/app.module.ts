@@ -1,18 +1,30 @@
 import { Module } from '@nestjs/common';
-import { ConfigService, ConfigModule } from '@nestjs/config';
-import { MorpheusModule } from 'morpheus4j';
+import { MorpheusModule, Neo4jScheme } from '../../../dist/morpheus/index';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MigrationsModule } from './migrations.module';
+
 @Module({
   imports: [
-    // Sync register
+    ConfigModule.forRoot(),
+    /**
+     * MorpheusModule will try to pickup the configuration from the environment variables or from the .morpheus.json
+     * If no configuration is found, it will yield an error message.
+     */
+    MorpheusModule,
+
+    /**
+     * You can also register the module with a configuration object, syncronously or asyncronously
+     * This will make the module ignore the environment variables and the .morpheus.json file
+     */
     MorpheusModule.register({
-      scheme: 'bolt',
+      scheme: Neo4jScheme.NEO4J,
       host: 'localhost',
-      port: 7687,
+      port: 7474,
       username: 'neo4j',
-      password: 'password',
+      password: 'neo4j',
+      database: 'neo4j',
       migrationsPath: './neo4j/migrations', // default value
     }),
-    // Async register
     MorpheusModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -25,6 +37,11 @@ import { MorpheusModule } from 'morpheus4j';
       }),
       inject: [ConfigService],
     }),
+
+    /**
+     * You can create your own module which imports MorpheusModule and uses the MorpheusService
+     */
+    MigrationsModule,
   ],
 })
 export class AppModule {}

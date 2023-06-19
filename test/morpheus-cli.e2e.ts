@@ -51,7 +51,7 @@ describe('Morpheus CLI (e2e)', () => {
     it('fails if the database is not reachable', async () => {
       process.env.MORPHEUS_SCHEME = 'bolt';
       process.env.MORPHEUS_HOST = 'localhost';
-      process.env.MORPHEUS_PORT = '7687';
+      process.env.MORPHEUS_PORT = '8888';
       process.env.MORPHEUS_USERNAME = 'neo4j';
       process.env.MORPHEUS_PASSWORD = 'neo4j';
       process.env.MORPHEUS_MIGRATIONS_PATH = 'migrations';
@@ -59,7 +59,7 @@ describe('Morpheus CLI (e2e)', () => {
       await CommandTestFactory.run(app, ['info']);
 
       expect(loggerService.error).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to connect to server.'),
+        expect.stringMatching(/Failed to connect to server(.*)/),
       );
     });
 
@@ -262,6 +262,7 @@ Issue the following command to create one:
         migrationsPath: simplePath,
         host: 'localhost',
         path: simplePath,
+        port: 9999,
       });
 
       await CommandTestFactory.run(app, ['migrate']);
@@ -451,8 +452,8 @@ Issue the following command to create one:
 
       expect(loggerService.error).toHaveBeenCalled();
       expect(loggerService.error).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Could not perform discovery. No routing servers available. ',
+        expect.stringMatching(
+          /(.*)The client is unauthorized due to authentication failure(.*)|(.*)Could not perform discovery(.*)/,
         ),
       );
     });

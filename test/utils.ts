@@ -7,7 +7,7 @@ import {
   DEFAULT_MIGRATIONS_PATH,
   MORPHEUS_FILE_NAME,
 } from '../src/app.constants';
-import { Neo4jConfig } from 'src/config/config-loader';
+import { Neo4jConfig, Neo4jScheme } from 'src/config/config-loader';
 
 let connection: Connection;
 
@@ -84,4 +84,25 @@ export const createMigrationFile = async (): Promise<void> => {
     `${DEFAULT_MIGRATIONS_PATH}/${newMigrationName}`,
     fileContent,
   );
+};
+
+export const configFromEnv = (
+  partialConfig: Partial<Neo4jConfig> = {},
+): Neo4jConfig => {
+  const host = process.env.TEST_NEO4J_HOST;
+  const port = Number(process.env.TEST_NEO4J_PORT);
+  const username = process.env.TEST_NEO4J_USERNAME;
+  const password = process.env.TEST_NEO4J_PASSWORD;
+  const scheme = process.env.TEST_NEO4J_SCHEME as Neo4jScheme;
+  const database = process.env.TEST_NEO4J_DATABASE;
+
+  return {
+    host,
+    port,
+    username,
+    password,
+    scheme,
+    database,
+    ...partialConfig,
+  };
 };

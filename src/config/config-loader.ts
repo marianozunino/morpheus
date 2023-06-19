@@ -1,15 +1,16 @@
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import Joi from 'joi';
-import { MORPHEUS_FILE_NAME } from '../app.constants';
+import { DEFAULT_MIGRATIONS_PATH, MORPHEUS_FILE_NAME } from '../app.constants';
 
-export type Neo4jScheme =
-  | 'neo4j'
-  | 'neo4j+s'
-  | 'neo4j+ssc'
-  | 'bolt'
-  | 'bolt+s'
-  | 'bolt+ssc';
+export enum Neo4jScheme {
+  NEO4J = 'neo4j',
+  NEO4J_S = 'neo4j+s',
+  NEO4J_SSC = 'neo4j+ssc',
+  BOLT = 'bolt',
+  BOLT_S = 'bolt+s',
+  BOLT_SSC = 'bolt+ssc',
+}
 
 export interface Neo4jConfig {
   database?: string;
@@ -70,7 +71,7 @@ export class ConfigLoader {
     }
   }
 
-  private static validateConfig(config: Neo4jConfig): void {
+  public static validateConfig(config: Neo4jConfig): void {
     const validationResult = Joi.object({
       scheme: Joi.string()
         .valid('neo4j', 'neo4j+s', 'neo4j+ssc', 'bolt', 'bolt+s', 'bolt+ssc')
@@ -80,7 +81,14 @@ export class ConfigLoader {
       username: Joi.string().required(),
       password: Joi.string().required(),
       migrationsPath: Joi.string().optional(),
+      database: Joi.string().optional(),
     }).validate(config);
+
+    // apply default migrations path
+    if (!config.migrationsPath) {
+      config.migrationsPath = DEFAULT_MIGRATIONS_PATH;
+    }
+
     if (validationResult.error?.details?.length > 0) {
       validationResult.error.details.forEach((detail) => {
         console.error(detail.message);
