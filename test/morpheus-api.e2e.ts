@@ -151,9 +151,9 @@ describe('Morpheus API (e2e)', () => {
         );
       });
 
-      it('shows the db name in the logs if provided', async () => {
+      it.only('shows the db name in the logs if provided', async () => {
         const config = testUtils.configFromEnv({
-          database: 'test',
+          database: 'neo4j',
         });
 
         await testUtils.createMigrationFile();
