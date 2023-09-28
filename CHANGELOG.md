@@ -1,3 +1,10 @@
+# [3.3.0](https://github.com/marianozunino/morpheus/compare/v3.2.0...v3.3.0) (2023-09-28)
+
+
+### Features
+
+* allow setting session database from config ([35a1443](https://github.com/marianozunino/morpheus/commit/35a14438b10c7af23f72ba4c79d925c61d43bddd))
+
 # [3.2.0](https://github.com/marianozunino/morpheus/compare/v3.1.0...v3.2.0) (2023-06-19)
 
 
