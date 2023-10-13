@@ -91,6 +91,7 @@ export class FsService {
       password: 'neo4j',
       scheme: Neo4jScheme.NEO4J,
       migrationsPath: DEFAULT_MIGRATIONS_PATH,
+      database: 'neo4j',
     };
     writeFileSync(MORPHEUS_FILE_NAME, JSON.stringify(defaultConfig, null, 2));
     this.logger.log(`Morpheus file created: ${MORPHEUS_FILE_NAME}`);

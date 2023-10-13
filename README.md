@@ -86,6 +86,9 @@ MORPHEUS_USERNAME=neo4j
 # This refers to the password of the database.
 MORPHEUS_PASSWORD=neo4j
 
+# This refers to the name of the database.
+MORPHEUS_DATABASE=neo4j # default value
+
 # This refers to the path where the migrations are located.
 MORPHEUS_MIGRATIONS_PATH=neo4j/migrations # default value
 ```
@@ -141,6 +144,7 @@ import { MorpheusModule } from 'morpheus4j';
       port: 7687,
       username: 'neo4j',
       password: 'password',
+      database: 'neo4j',
       migrationsPath: './neo4j/migrations', // default value
     }),
     // Async register
@@ -152,6 +156,7 @@ import { MorpheusModule } from 'morpheus4j';
         port: configService.get('MORPHEUS_PORT'),
         username: configService.get('MORPHEUS_USERNAME'),
         password: configService.get('MORPHEUS_PASSWORD'),
+        database: configService.get('MORPHEUS_DATABASE'),
         migrationsPath: './neo4j/migrations', // default value
       }),
       inject: [ConfigService],
