@@ -1,3 +1,10 @@
+# [3.4.0](https://github.com/marianozunino/morpheus/compare/v3.3.0...v3.4.0) (2023-10-16)
+
+
+### Features
+
+* allow setting database config property from env var ([9a6e9ca](https://github.com/marianozunino/morpheus/commit/9a6e9ca3c036afb28e2eb55c8ba798a89776b083))
+
 # [3.3.0](https://github.com/marianozunino/morpheus/compare/v3.2.0...v3.3.0) (2023-09-28)
 
 
