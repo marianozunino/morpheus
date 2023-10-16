@@ -47,6 +47,7 @@ export class ConfigLoader {
       port: Number(process.env.MORPHEUS_PORT),
       username: process.env.MORPHEUS_USERNAME,
       password: process.env.MORPHEUS_PASSWORD,
+      database: process.env.MORPHEUS_DATABASE,
       migrationsPath: process.env.MORPHEUS_MIGRATIONS_PATH,
     };
     this.validateConfig(config);

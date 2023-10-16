@@ -33,6 +33,7 @@ import { MigrationsModule } from './migrations.module';
         port: configService.get('MORPHEUS_PORT'),
         username: configService.get('MORPHEUS_USERNAME'),
         password: configService.get('MORPHEUS_PASSWORD'),
+        database: configService.get('MORPHEUS_DATABASE'),
         migrationsPath: './neo4j/migrations', // default value
       }),
       inject: [ConfigService],
