@@ -1,3 +1,10 @@
+# [3.5.0](https://github.com/marianozunino/morpheus/compare/v3.4.0...v3.5.0) (2023-12-08)
+
+
+### Features
+
+* **#36:** support nestjs 10 ([f0ea6ba](https://github.com/marianozunino/morpheus/commit/f0ea6bac21c814284b621bee1d8ebc37651d48f5)), closes [#36](https://github.com/marianozunino/morpheus/issues/36)
+
 # [3.4.0](https://github.com/marianozunino/morpheus/compare/v3.3.0...v3.4.0) (2023-10-16)
 
 
