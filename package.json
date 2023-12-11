@@ -71,7 +71,7 @@
     "cypher-query-builder": "^6.0.4",
     "joi": "^17.7.0",
     "mollusc": "2.0.0",
-    "neo4j-driver-core": "5.5.0",
+    "neo4j-driver-core": "5.15.0",
     "nest-commander": "3.12.5",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0"
