@@ -6,7 +6,7 @@ import { Provider } from '@nestjs/common';
 export const getDatabaseConnection = async (
   dbConfig: Neo4jConfig = ConfigLoader.getConfig(),
 ) => {
-  let connectionUrl = `${dbConfig.scheme}://${dbConfig.host}:${dbConfig.port}`;
+  const connectionUrl = `${dbConfig.scheme}://${dbConfig.host}:${dbConfig.port}`;
   const connection = new Connection(connectionUrl, {
     username: dbConfig.username,
     password: dbConfig.password,
