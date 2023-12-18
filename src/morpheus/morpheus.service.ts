@@ -7,8 +7,7 @@ import { FsService } from '../cli/fs.service';
 import { Repository } from '../db/repository';
 import { getDatabaseConnection } from '../db/neo4j';
 import { LoggerService } from '../logger.service';
-import { Connection as CypherQBConnection } from 'cypher-query-builder';
-import { Connection } from 'neo4j-driver-core';
+import { Connection } from 'cypher-query-builder';
 
 @Injectable()
 export class MorpheusService {
@@ -48,7 +47,7 @@ export class MorpheusService {
 
   private async executeMigrations(
     config: Neo4jConfig,
-    providedConnection?: Connection | CypherQBConnection,
+    providedConnection?: Connection,
   ): Promise<void> {
     const { migrationService, connection } = await this.getDependencies(
       config,
@@ -68,16 +67,13 @@ export class MorpheusService {
     }
   }
 
-  private async getDependencies(
-    config: Neo4jConfig,
-    connection?: Connection | CypherQBConnection,
-  ) {
+  private async getDependencies(config: Neo4jConfig, connection?: Connection) {
     if (!connection) {
       connection = await getDatabaseConnection(config);
     }
 
     const fsService = new FsService(this.logger, config);
-    const repository = new Repository(connection as CypherQBConnection);
+    const repository = new Repository(connection);
 
     const migrationService = new MigrationService(
       fsService,
@@ -89,7 +85,7 @@ export class MorpheusService {
 
   public async runMigrationsFor(
     config: Neo4jConfig,
-    providedConnection?: Connection | CypherQBConnection,
+    providedConnection?: Connection,
   ): Promise<void> {
     ConfigLoader.validateConfig(config);
     this.logger.debug(
@@ -105,7 +101,7 @@ export class MorpheusService {
    */
   public async cleanDatabase(
     config: Neo4jConfig & { cleanConfig?: { dropConstraints?: boolean } },
-    providedConnection?: Connection | CypherQBConnection,
+    providedConnection?: Connection,
   ): Promise<void> {
     ConfigLoader.validateConfig(config);
 
