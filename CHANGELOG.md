@@ -1,3 +1,10 @@
+## [3.5.1](https://github.com/marianozunino/morpheus/compare/v3.5.0...v3.5.1) (2023-12-18)
+
+
+### Bug Fixes
+
+* connection types ([dc1d4fb](https://github.com/marianozunino/morpheus/commit/dc1d4fb6177edcba8715decd2092acd2cf0cab39))
+
 # [3.5.0](https://github.com/marianozunino/morpheus/compare/v3.4.0...v3.5.0) (2023-12-08)
 
 
