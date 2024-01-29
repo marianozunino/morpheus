@@ -32,13 +32,6 @@
     "@morpheus4j/core": "0.0.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
-    "@nestjs/platform-express": "^10.0.0",
-    "crc": "4.3.2",
-    "crc32": "0.2.2",
-    "cypher-query-builder": "6.0.4",
-    "joi": "17.11.0",
-    "mollusc": "2.0.0",
-    "neo4j-driver-core": "5.16.0",
     "nest-commander": "3.12.5",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1"
