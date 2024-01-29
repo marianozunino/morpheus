@@ -6,11 +6,13 @@
 "@morpheus4j/tsconfig": major
 ---
 
-- Initial commit
-- Moving morpheus4j to a monorepo architecture
+### Changes
+  - Moving morpheus4j to a monorepo architecture
   - Created a `core` module that hold the shared morpheus4j code
   - Created a `cli` module that holds the cli application
   - Created a `nestjs` module that holds the nestjs module
-- TODOs:
+#### TODOs:
   - Migrate tests from the old `morpheus4j` package
   - Use vitest instead of jest
+#### WIP:
+  - Update `README.md`
