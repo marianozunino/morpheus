@@ -1,0 +1,16 @@
+{
+  "extends": "@morpheus4j/tsconfig/base.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@src/*": [
+        "src/*"
+      ],
+    }
+  },
+  "include": [
+    "src/**/*"
+  ]
+}
