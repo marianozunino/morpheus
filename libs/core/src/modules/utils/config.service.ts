@@ -1,16 +1,24 @@
 import { writeFileSync, existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
-
 import { MorpheusConfig, Neo4jConfig, Neo4jScheme, InitOptions, MORPHEUS_FILE_NAME, DEFAULT_MIGRATIONS_PATH } from '../..';
-
-import Joi from 'joi';
 import { Injectable } from '@nestjs/common';
+import { z } from 'zod';
+
+const configSchema = z.object({
+  scheme: z.enum(['neo4j', 'neo4j+s', 'neo4j+ssc', 'bolt', 'bolt+s', 'bolt+ssc']),
+  host: z.string(),
+  port: z.coerce.number(),
+  username: z.string(),
+  password: z.string(),
+  migrationsPath: z.string().optional().default(DEFAULT_MIGRATIONS_PATH),
+  database: z.string().optional(),
+});
 
 @Injectable()
 export class ConfigService {
   constructor() {}
 
-  public static getConfig(): Neo4jConfig {
+  public static loadConfig(): Neo4jConfig {
     if (this.isUsingEnv()) {
       return this.getConfigFromEnv();
     }
@@ -55,50 +63,26 @@ export class ConfigService {
   }
 
   public static validateConfig(config: MorpheusConfig): void {
-    const validationResult = Joi.object({
-      scheme: Joi.string().valid('neo4j', 'neo4j+s', 'neo4j+ssc', 'bolt', 'bolt+s', 'bolt+ssc').required(),
-      host: Joi.string().required(),
-      port: Joi.number().required(),
-      username: Joi.string().required(),
-      password: Joi.string().required(),
-      migrationsPath: Joi.string().optional(),
-      database: Joi.string().optional(),
-    }).validate(config, { allowUnknown: true });
+    const result = configSchema.safeParse(config);
 
-    // apply default migrations path
-    if (!config.migrationsPath) {
-      // eslint-disable-next-line no-param-reassign
-      config.migrationsPath = DEFAULT_MIGRATIONS_PATH;
-    }
-
-    if (validationResult.error?.details?.length > 0) {
-      validationResult.error.details.forEach((detail) => {
-        console.error(detail.message);
+    if (!result.success) {
+      const err = result as z.SafeParseError<MorpheusConfig>;
+      err.error.issues.forEach((issue) => {
+        console.error(issue.message);
       });
-      throw new Error('Invalid config');
+
+      throw new Error(`Invalid database config.`);
     }
   }
 
   public static getMigrationsPath(): string {
-    const config = this.getConfig();
+    const config = this.loadConfig();
 
     return config.migrationsPath;
   }
 
-  public static getNeo4jConfig(): Neo4jConfig {
-    const config = this.getConfig();
-    return {
-      scheme: config.scheme,
-      host: config.host,
-      port: config.port,
-      username: config.username,
-      password: config.password,
-      database: config.database,
-    };
-  }
-
-  public static getMorpheusConfig(): MorpheusConfig {
-    return this.getConfig();
+  public static getNeo4jConfig(): Neo4jConfig & MorpheusConfig {
+    return this.loadConfig();
   }
 
   public static createMorpheusFile(options: InitOptions): void {

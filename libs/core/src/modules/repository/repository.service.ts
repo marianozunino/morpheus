@@ -3,13 +3,7 @@ import { Transaction } from 'neo4j-driver-core';
 import { node, Node, relation, Connection } from 'cypher-query-builder';
 
 import { MODULE_OPTIONS_TOKEN } from './repository.module-definition';
-import {
-  Neo4jMigrationNode,
-  MigrationInfo,
-  Neo4jMigrationRelation,
-  MIGRATION_LABEL,
-  BASELINE,
-} from '../..';
+import { Neo4jMigrationNode, MigrationInfo, Neo4jMigrationRelation, MIGRATION_LABEL, BASELINE } from '../..';
 
 @Injectable()
 export class RepositoryService {
@@ -29,10 +23,7 @@ export class RepositoryService {
     return baseNode?.base?.properties;
   }
 
-  public async executeQueries(
-    queries: string[],
-    trx?: Transaction,
-  ): Promise<void> {
+  public async executeQueries(queries: string[], trx?: Transaction): Promise<void> {
     if (trx) {
       for (const statement of queries) {
         await trx.run(statement);
@@ -63,10 +54,7 @@ export class RepositoryService {
   }
 
   public async createBaseNode(): Promise<void> {
-    await this.connection
-      .query()
-      .createNode('base', MIGRATION_LABEL, { version: BASELINE })
-      .run();
+    await this.connection.query().createNode('base', MIGRATION_LABEL, { version: BASELINE }).run();
   }
 
   public async getPreviousMigrations(): Promise<Neo4jMigrationNode[]> {
@@ -86,25 +74,14 @@ export class RepositoryService {
     return this.executeQueries([query], trx);
   }
 
-  public buildMigrationQuery(
-    neo4jMigration: Neo4jMigrationNode,
-    fromVersion: string,
-    duration: number,
-  ): string {
+  public buildMigrationQuery(neo4jMigration: Neo4jMigrationNode, fromVersion: string, duration: number): string {
     return this.connection
       .query()
       .matchNode('migration', MIGRATION_LABEL)
       .where({ 'migration.version': fromVersion })
       .with('migration')
-      .create([
-        node('migration'),
-        relation('out', 'r', 'MIGRATED_TO'),
-        node('newMigration', MIGRATION_LABEL, neo4jMigration),
-      ])
-      .raw(
-        'SET r.at = datetime({timezone: "UTC"}), r.in = duration({milliseconds: $duration})',
-        { duration },
-      )
+      .create([node('migration'), relation('out', 'r', 'MIGRATED_TO'), node('newMigration', MIGRATION_LABEL, neo4jMigration)])
+      .raw('SET r.at = datetime({timezone: "UTC"}), r.in = duration({milliseconds: $duration})', { duration })
       .return('newMigration')
       .interpolate()
       .replace(/;$/, '');
@@ -113,11 +90,7 @@ export class RepositoryService {
   public async getMigrationInfo(): Promise<MigrationInfo[]> {
     const nodes = await this.connection
       .query()
-      .match([
-        node(MIGRATION_LABEL),
-        relation('out', 'r', 'MIGRATED_TO'),
-        node('migration', MIGRATION_LABEL),
-      ])
+      .match([node(MIGRATION_LABEL), relation('out', 'r', 'MIGRATED_TO'), node('migration', MIGRATION_LABEL)])
       .return(['migration', 'r'])
       .run<Node<Neo4jMigrationNode & Neo4jMigrationRelation>>();
 
@@ -135,9 +108,7 @@ export class RepositoryService {
   }
 
   public getTransaction(): Transaction {
-    return this.connection
-      .session()
-      .beginTransaction() as unknown as Transaction;
+    return this.connection.session().beginTransaction() as unknown as Transaction;
   }
 
   public async dropChain(): Promise<void> {
@@ -155,13 +126,14 @@ export class RepositoryService {
   public async dropConstraints(): Promise<void> {
     const trx = this.getTransaction();
     await this.executeQueries(
-      [
-        `DROP CONSTRAINT unique_version_${MIGRATION_LABEL} IF exists`,
-        `DROP INDEX idx_version_${MIGRATION_LABEL} IF exists`,
-      ],
+      [`DROP CONSTRAINT unique_version_${MIGRATION_LABEL} IF exists`, `DROP INDEX idx_version_${MIGRATION_LABEL} IF exists`],
       trx,
     );
 
     await trx.commit();
+  }
+
+  public async close(): Promise<void> {
+    await this.connection.close();
   }
 }

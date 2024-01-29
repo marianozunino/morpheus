@@ -14,8 +14,8 @@
     "morpheus": "./dist/main.js"
   },
   "scripts": {
-    "dev": "tsup --watch",
     "build": "tsup src/main.ts --format cjs,esm --dts",
+    "dev": "tsup src/main.ts --format cjs,esm --dts --watch",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",

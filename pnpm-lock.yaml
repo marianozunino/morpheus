@@ -135,6 +135,9 @@ importers:
 
   apps/nestjs-module:
     dependencies:
+      '@morpheus4j/core':
+        specifier: 0.0.0
+        version: link:../../libs/core
       '@nestjs/common':
         specifier: ^10.0.0
         version: 10.3.0(reflect-metadata@0.1.14)(rxjs@7.8.1)
@@ -265,6 +268,9 @@ importers:
       neo4j-driver-core:
         specifier: 5.16.0
         version: 5.16.0
+      zod:
+        specifier: 3.22.4
+        version: 3.22.4
     devDependencies:
       '@morpheus4j/eslint-config-custom':
         specifier: 0.0.0
@@ -7558,3 +7564,7 @@ packages:
   /yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+
+  /zod@3.22.4:
+    resolution: {integrity: sha512-iC+8Io04lddc+mVqQ9AZ7OQ2MrUKGN+oIQyq1vemgt46jwCwLfhq7/pwnBnNXXXZb8VTVLKwp9EDkx+ryxIWmg==}
+    dev: false
