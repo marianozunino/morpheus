@@ -32,11 +32,11 @@ This project has been tested with
 # Usage
 <!-- usage -->
 ```sh-session
-$ npm install -g morpheus
+$ npm install -g morpheus4j
 $ morpheus COMMAND
 running command...
 $ morpheus (--version)
-morpheus/3.5.1 linux-x64 node-v20.16.0
+morpheus4j/3.5.1 linux-x64 node-v20.18.0
 $ morpheus --help [COMMAND]
 USAGE
   $ morpheus COMMAND
