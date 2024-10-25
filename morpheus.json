@@ -1,0 +1,9 @@
+{
+  "database": "neo4j",
+  "host": "localhost",
+  "migrationsPath": "neo4j/migrations",
+  "password": "neo4j",
+  "port": 7687,
+  "scheme": "neo4j",
+  "username": "neo4j"
+}
