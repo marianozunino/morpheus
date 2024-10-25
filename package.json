@@ -1,101 +1,123 @@
 {
   "name": "morpheus4j",
-  "version": "3.5.1",
-  "main": "dist/morpheus/index.js",
-  "types": "dist/morpheus/index.d.ts",
   "description": "Morpheus is a migration tool for Neo4j. It aims to be a simple and intuitive way to migrate your database.",
-  "license": "MIT",
-  "author": {
-    "name": "Mariano Zunino",
-    "email": "marianoz@zoho.com",
-    "url": "https://github.com/marianozunino"
+  "version": "3.5.1",
+  "author": "Mariano Z.",
+  "bin": {
+    "morpheus": "./bin/run.js"
   },
-  "typesVersions": {
-    "*": {
-      "nest": [
-        "dist/morpheus/index.d.ts"
-      ]
-    }
+  "bugs": {
+    "url": "https://github.com/marianozunino/morpheus/issues"
+  },
+  "dependencies": {
+    "@oclif/core": "^4.0.0",
+    "@oclif/plugin-autocomplete": "^3.2.6",
+    "console-table-printer": "^2.12.1",
+    "crc": "^4.3.2",
+    "cypher-query-builder": "^6.0.4",
+    "fs-extra": "^11.2.0",
+    "kleur": "^4.1.5",
+    "neo4j-driver": "^5.26.0",
+    "slugify": "^1.6.6",
+    "winston": "^3.15.0",
+    "zod": "^3.23.8"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^9.0.0 || ^10.0.0",
+    "@nestjs/core": "^9.0.0 || ^10.0.0",
+    "reflect-metadata": "^0.1.13 || ^0.2.0",
+    "rxjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/testing": "^10.0.0",
+    "@oclif/prettier-config": "^0.2.1",
+    "@oclif/test": "^4.0.0",
+    "@types/chai": "^4.0.0",
+    "@types/fs-extra": "^11.0.4",
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^18.0.0",
+    "c8": "10.1.2",
+    "chai": "^4.0.0",
+    "chance": "^1.1.12",
+    "eslint": "^8.0.0",
+    "eslint-config-oclif": "^5.0.0",
+    "eslint-config-oclif-typescript": "^3.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "husky": "9.1.6",
+    "mocha": "^10.0.0",
+    "nodemon": "^3.1.7",
+    "oclif": "^4.0.0",
+    "shx": "^0.3.3",
+    "testcontainers": "^10.13.2",
+    "ts-node": "^10.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=10.0.0"
+  },
+  "files": [
+    "/bin",
+    "/dist",
+    "/oclif.manifest.json"
+  ],
+  "homepage": "https://github.com/marianozunino/morpheus#readme",
+  "keywords": [
+    "oclif",
+    "neo4j",
+    "migration",
+    "database",
+    "graph-database",
+    "cli"
+  ],
+  "license": "MIT",
+  "oclif": {
+    "bin": "morpheus",
+    "dirname": "morpheus",
+    "commands": "./dist/commands",
+    "topicSeparator": " ",
+    "helpOptions": {
+      "flagSortOrder": "none"
+    },
+    "plugins": [
+      "@oclif/plugin-autocomplete"
+    ]
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/marianozunino/morpheus"
-  },
-  "keywords": [
-    "neo4j",
-    "migrations",
-    "migration tool",
-    "nestjs",
-    "cli"
-  ],
-  "bin": {
-    "morpheus": "./dist/main.js"
-  },
-  "files": [
-    "dist"
-  ],
-  "devDependencies": {
-    "@commitlint/cli": "^17.4.2",
-    "@commitlint/config-conventional": "^17.4.2",
-    "@nestjs/common": "^10.2.10",
-    "@nestjs/config": "3.1.1",
-    "@nestjs/core": "^10.2.10",
-    "@nestjs/platform-express": "10.2.10",
-    "@nestjs/testing": "^10.2.10",
-    "@types/chance": "1.1.3",
-    "@types/fs-extra": "11.0.1",
-    "@types/jest": "^29.4.0",
-    "@types/node": "^18.11.18",
-    "@types/rimraf": "^3.0.2",
-    "@typescript-eslint/eslint-plugin": "^5.50.0",
-    "@typescript-eslint/parser": "^5.50.0",
-    "chance": "1.1.9",
-    "cspell": "6.19.2",
-    "eslint": "^8.33.0",
-    "eslint-config-prettier": "^8.6.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "fs-extra": "11.1.0",
-    "husky": "^8.0.3",
-    "jest": "^29.4.1",
-    "neo4j-driver": "^5.5.0",
-    "nest-commander-testing": "3.3.0",
-    "prettier": "^2.8.3",
-    "rimraf": "^4.1.2",
-    "ts-jest": "^29.0.5",
-    "ts-node": "^10.9.1",
-    "typescript": "^4.9.5"
-  },
-  "dependencies": {
-    "commander": "^11.1.0",
-    "crc": "^4.3.2",
-    "cypher-query-builder": "^6.0.4",
-    "joi": "^17.7.0",
-    "mollusc": "2.0.0",
-    "neo4j-driver-core": "5.15.0",
-    "nest-commander": "3.12.5",
-    "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.0"
-  },
-  "peerDependencies": {
-    "@nestjs/common": "^10.0.0",
-    "@nestjs/config": "^3.0.0",
-    "@nestjs/core": "^10.0.0"
+    "url": "git+https://github.com/marianozunino/morpheus.git"
   },
   "scripts": {
-    "build": "npm run clean && npm run transpile",
-    "transpile": "tsc -p tsconfig.build.json",
-    "clean": "rimraf dist",
-    "test": "jest",
-    "start:dev": "NODE_ENV=development nest start --watch ",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "NODE_ENV=production node dist/src/app",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json --setupFiles dotenv/config --forceExit --runInBand",
-    "prepare": "husky install",
-    "morpheus": "node ./dist/main.js",
-    "lint": "eslint src/**/*.ts --fix",
-    "cspell": "cspell \"**/*.{ts,js,json,md}\""
+    "build": "shx rm -rf dist && tsc -b",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "postpack": "shx rm -f oclif.manifest.json",
+    "prepack": "npm run build && oclif manifest && oclif readme",
+    "test": "c8 mocha \"test/**/*.test.ts\"",
+    "version": "oclif readme && git add README.md",
+    "watch": "nodemon --watch src --ext ts --exec \"npm run build\"",
+    "prepare": "husky"
+  },
+  "main": "dist/nestjs/index.js",
+  "types": "dist/nesjs/index.d.ts",
+  "c8": {
+    "include": [
+      "src/**/*.ts"
+    ],
+    "exclude": [
+      "data/import",
+      "test/**/*.ts"
+    ],
+    "extension": [
+      ".ts"
+    ],
+    "reporter": [
+      "text",
+      "lcov"
+    ],
+    "cache": false,
+    "all": true
   }
 }

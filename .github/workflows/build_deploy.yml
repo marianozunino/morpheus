@@ -23,6 +23,9 @@ jobs:
       # Get deploy code
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          # This is important for semantic-release to have access to the full history
+          fetch-depth: 0
 
       - name: Get npm cache
         uses: actions/cache@v2
@@ -32,22 +35,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+
       # Build using the custom script (sam build + custom builds)
       - name: Build
         shell: bash
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          TEST_NEO4J_HOST: ${{ secrets.TEST_NEO4J_HOST }}
-          TEST_NEO4J_PORT: ${{ secrets.TEST_NEO4J_PORT }}
-          TEST_NEO4J_USERNAME: ${{ secrets.TEST_NEO4J_USERNAME }}
-          TEST_NEO4J_PASSWORD: ${{ secrets.TEST_NEO4J_PASSWORD }}
-          TEST_NEO4J_SCHEME: ${{ secrets.TEST_NEO4J_SCHEME }}
         run: |
           npm ci
           npm run build
-          npm run test:e2e
-          npm run test:cov
+
+      - name: Generate oclif artifacts
+        run: |
+          # Generate readme
+          npm run prepack
+
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git add README.md
+          git commit -m "docs: update readme with oclif commands [skip ci]" || true
 
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v3

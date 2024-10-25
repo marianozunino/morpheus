@@ -1,40 +1,21 @@
-# compiled output
-/dist
-/node_modules
-
-# Logs
-logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
-# OS
-.DS_Store
-
-# Tests
-/coverage
-/.nyc_output
-
-# IDEs and editors
+*-debug.log
+*-error.log
+**/.DS_Store
 /.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
+/dist
+/tmp
+/node_modules
+oclif.manifest.json
+*.tsbuildinfo
 
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-.env
-
+yarn.lock
+pnpm-lock.yaml
+data
+logs
 neo4j
-
-.morpheus.json
+plugins
+*.tgz
+nestjs-example/dist
+nyc
+.nyc*
+coverage
