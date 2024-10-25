@@ -36,7 +36,7 @@ $ npm install -g morpheus4j
 $ morpheus COMMAND
 running command...
 $ morpheus (--version)
-morpheus4j/3.5.1 linux-x64 node-v20.18.0
+morpheus4j/4.0.0 linux-x64 node-v20.13.1
 $ morpheus --help [COMMAND]
 USAGE
   $ morpheus COMMAND
@@ -120,7 +120,7 @@ EXAMPLES
   $ morpheus clean --config ./custom-config.json
 ```
 
-_See code: [src/commands/clean.ts](https://github.com/marianozunino/morpheus/blob/v3.5.1/src/commands/clean.ts)_
+_See code: [src/commands/clean.ts](https://github.com/marianozunino/morpheus/blob/v4.0.0/src/commands/clean.ts)_
 
 ## `morpheus create NAME`
 
@@ -148,7 +148,7 @@ EXAMPLES
   $ morpheus create update-relationships --config ./custom-config.json
 ```
 
-_See code: [src/commands/create.ts](https://github.com/marianozunino/morpheus/blob/v3.5.1/src/commands/create.ts)_
+_See code: [src/commands/create.ts](https://github.com/marianozunino/morpheus/blob/v4.0.0/src/commands/create.ts)_
 
 ## `morpheus info`
 
@@ -184,7 +184,7 @@ EXAMPLES
   $ morpheus info --config ./custom-config.json
 ```
 
-_See code: [src/commands/info.ts](https://github.com/marianozunino/morpheus/blob/v3.5.1/src/commands/info.ts)_
+_See code: [src/commands/info.ts](https://github.com/marianozunino/morpheus/blob/v4.0.0/src/commands/info.ts)_
 
 ## `morpheus init`
 
@@ -211,7 +211,7 @@ EXAMPLES
   $ morpheus init --config .config.json --force
 ```
 
-_See code: [src/commands/init.ts](https://github.com/marianozunino/morpheus/blob/v3.5.1/src/commands/init.ts)_
+_See code: [src/commands/init.ts](https://github.com/marianozunino/morpheus/blob/v4.0.0/src/commands/init.ts)_
 
 ## `morpheus migrate`
 
@@ -246,7 +246,7 @@ EXAMPLES
   $ morpheus migrate --config ./custom-config.json
 ```
 
-_See code: [src/commands/migrate.ts](https://github.com/marianozunino/morpheus/blob/v3.5.1/src/commands/migrate.ts)_
+_See code: [src/commands/migrate.ts](https://github.com/marianozunino/morpheus/blob/v4.0.0/src/commands/migrate.ts)_
 <!-- commandsstop -->
 
 

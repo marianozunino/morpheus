@@ -1,3 +1,31 @@
+# [4.0.0](https://github.com/marianozunino/morpheus/compare/v3.5.1...v4.0.0) (2024-10-25)
+
+
+* feat!: migrate from NestJS+Commander to OCLIF ([4aa2350](https://github.com/marianozunino/morpheus/commit/4aa2350e5ac50e34e96a52d12bcc148bc69fb0c8))
+
+
+### BREAKING CHANGES
+
+* Major architectural changes in how the library is used.
+
+- Removed NestJS module `register` and `registerAsync` methods
+- Removed `runMigrationsFor` method
+- Simplified CLI architecture by switching to OCLIF
+- CLI flags can now be overridden by env vars (MORPHEUS_*)
+
+Migration Guide:
+1. NestJS Integration:
+   - Instead of using the module, inject MorpheusService directly
+   - Available methods:
+     * cleanDatabase(config?: {cleanConfig?: {dropConstraints?: boolean}} & Neo4jConfig)
+     * runMigrations(config?: Neo4jConfig)
+
+2. Configuration:
+   - Config must now be explicitly provided to methods
+   - Falls back to:
+     1. MORPHEUS_* environment variables
+     2. morpheus.json file
+
 ## [3.5.1](https://github.com/marianozunino/morpheus/compare/v3.5.0...v3.5.1) (2023-12-18)
 
 
