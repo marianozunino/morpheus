@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "sourceMap": true
   },
   "include": [
     "src/**/*"

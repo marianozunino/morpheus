@@ -96,6 +96,7 @@ USAGE
 * [`morpheus autocomplete [SHELL]`](#morpheus-autocomplete-shell)
 * [`morpheus clean`](#morpheus-clean)
 * [`morpheus create NAME`](#morpheus-create-name)
+* [`morpheus delete VERSION`](#morpheus-delete-version)
 * [`morpheus info`](#morpheus-info)
 * [`morpheus init`](#morpheus-init)
 * [`morpheus migrate`](#morpheus-migrate)
@@ -201,6 +202,49 @@ EXAMPLES
 ```
 
 _See code: [src/commands/create.ts](https://github.com/marianozunino/morpheus/blob/v4.2.0/src/commands/create.ts)_
+
+## `morpheus delete VERSION`
+
+Delete a migration from the database.
+
+```
+USAGE
+  $ morpheus delete VERSION [--json] [--debug] [-c <value>] [-m <value>] [-h <value>] [-p <value>] [-s
+    <value>] [-P <value>] [-u <value>] [-d <value>] [--dry-run]
+
+ARGUMENTS
+  VERSION  The version that should be deleted
+
+FLAGS
+  -P, --password=<value>        Neo4j password. Env: 'MORPHEUS_PASSWORD'
+  -c, --configFile=<value>      Path to the morpheus file. ./morpheus.json by default
+  -d, --database=<value>        Neo4j database. Env: 'MORPHEUS_DATABASE'
+  -h, --host=<value>            Neo4j host. Env: 'MORPHEUS_HOST'
+  -m, --migrationsPath=<value>  Migrations path. Env: 'MORPHEUS_MIGRATIONS_PATH'
+  -p, --port=<value>            Neo4j port. Env: 'MORPHEUS_PORT'
+  -s, --scheme=<value>          Neo4j scheme. Env: 'MORPHEUS_SCHEME'
+  -u, --username=<value>        Neo4j username. Env: 'MORPHEUS_USERNAME'
+      --dry-run                 Perform a dry run - no changes will be made to the database
+
+GLOBAL FLAGS
+  --debug  Enable debug logging
+  --json   Format output as json.
+
+DESCRIPTION
+  Delete a migration from the database.
+
+  This command can be used to repair broken migration chains. If you accidentally deleted a migration file, you can use
+  this command to find the previous migration and delete it.
+
+EXAMPLES
+  $ morpheus delete 1.0.0
+
+  $ morpheus delete 1.2.3 --config ./custom-config.json
+
+  $ morpheus delete 1.4.0 --dry-run
+```
+
+_See code: [src/commands/delete.ts](https://github.com/marianozunino/morpheus/blob/v4.1.0/src/commands/delete.ts)_
 
 ## `morpheus info`
 
