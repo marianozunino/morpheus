@@ -1,139 +1,142 @@
-import {Connection, Node, node, relation} from 'cypher-query-builder'
-import {Transaction} from 'neo4j-driver'
+/* eslint-disable no-await-in-loop */
+
+import {Driver, RecordShape} from 'neo4j-driver'
 
 import {BASELINE, MIGRATION_LABEL} from '../constants'
-import {MigrationInfo, Neo4jMigrationNode, Neo4jMigrationRelation} from '../types'
+import {MigrationInfo, Neo4jMigrationNode} from '../types'
+import {Logger} from './logger'
 
 export class Repository {
-  public constructor(private readonly neo4j: Connection) {}
+  constructor(private readonly driver: Driver) {}
 
-  public buildMigrationQuery(neo4jMigration: Neo4jMigrationNode, fromVersion: string, duration: number): string {
-    return this.neo4j
-      .query()
-      .matchNode('migration', MIGRATION_LABEL)
-      .where({'migration.version': fromVersion})
-      .with('migration')
-      .create([
-        node('migration'),
-        relation('out', 'r', 'MIGRATED_TO'),
-        node('newMigration', MIGRATION_LABEL, neo4jMigration),
-      ])
-      .raw('SET r.at = datetime({timezone: "UTC"}), r.in = duration({milliseconds: $duration})', {duration})
-      .return('newMigration')
-      .interpolate()
-      .replace(/;$/, '')
+  async applyMigration(migration: Neo4jMigrationNode, fromVersion: string, duration: number): Promise<void> {
+    const queries = [
+      {
+        parameters: {
+          duration,
+          fromVersion,
+          properties: migration,
+        },
+        statement: `
+          MATCH (m:${MIGRATION_LABEL} {version: $fromVersion})
+          CREATE (m)-[r:MIGRATED_TO]->(new:${MIGRATION_LABEL} $properties)
+          SET r.at = datetime({timezone: 'UTC'}), r.in = duration({milliseconds: $duration})
+        `,
+      },
+    ]
+    await this.executeQueries(queries)
   }
 
-  public async createBaseNode(): Promise<void> {
-    await this.neo4j.query().createNode('base', MIGRATION_LABEL, {version: BASELINE}).run()
+  async cleanConstraints(): Promise<void> {
+    const schemaQueries = [
+      {statement: `DROP CONSTRAINT unique_version_${MIGRATION_LABEL} IF EXISTS`},
+      {statement: `DROP INDEX idx_version_${MIGRATION_LABEL} IF EXISTS`},
+    ]
+    await this.executeQueries(schemaQueries)
   }
 
-  public async createConstraints(): Promise<void> {
-    await this.executeQueries([
-      `CREATE CONSTRAINT unique_version_${MIGRATION_LABEL} IF NOT exists FOR (m:${MIGRATION_LABEL}) REQUIRE m.version IS UNIQUE`,
-      `CREATE INDEX idx_version_${MIGRATION_LABEL} IF NOT exists FOR (m:${MIGRATION_LABEL}) ON (m.version)`,
-    ])
+  async cleanMigrations(): Promise<void> {
+    const dataQueries = [
+      {statement: `MATCH (:${MIGRATION_LABEL})-[r:MIGRATED_TO]->(m:${MIGRATION_LABEL}) DETACH DELETE m, r`},
+      {statement: `MATCH (b:${MIGRATION_LABEL}) DETACH DELETE b`},
+    ]
+    await this.executeQueries(dataQueries)
   }
 
-  public async dropChain(): Promise<void> {
-    const trx = this.getTransaction()
-    await this.executeQueries(
-      [
-        `MATCH (${MIGRATION_LABEL})-[r:MIGRATED_TO]->(migration:${MIGRATION_LABEL}) DETACH DELETE migration, r`,
-        `MATCH (b:${MIGRATION_LABEL} {version:"${BASELINE}"}) DETACH DELETE b`,
-      ],
-      trx,
-    )
-    await trx.commit()
-  }
+  async executeQueries(queries: Array<{parameters?: RecordShape; statement: string}>): Promise<void> {
+    const session = this.driver.session()
+    const transaction = session.beginTransaction()
+    try {
+      for (const query of queries) {
+        Logger.debug(`Executing query: ${query.statement}`)
+        if (query.parameters) {
+          Logger.debug(`With parameters: ${JSON.stringify(query.parameters)}`)
+        }
 
-  public async dropConstraints(): Promise<void> {
-    const trx = this.getTransaction()
-    await this.executeQueries(
-      [
-        `DROP CONSTRAINT unique_version_${MIGRATION_LABEL} IF exists`,
-        `DROP INDEX idx_version_${MIGRATION_LABEL} IF exists`,
-      ],
-      trx,
-    )
-
-    await trx.commit()
-  }
-
-  public async executeQueries(queries: string[], trx?: Transaction): Promise<void> {
-    if (trx) {
-      for (const statement of queries) {
-        // eslint-disable-next-line no-await-in-loop
-        await trx.run(statement)
+        await transaction.run(query.statement, query.parameters || {})
       }
-    } else {
-      for (const statement of queries) {
-        // eslint-disable-next-line no-await-in-loop
-        await this.neo4j.raw(statement).run()
-      }
+
+      await transaction.commit()
+    } catch (error) {
+      await transaction.rollback()
+      throw error
+    } finally {
+      await session.close()
     }
   }
 
-  public async executeQuery(query: string, trx?: Transaction): Promise<void> {
-    return this.executeQueries([query], trx)
+  async getMigrationState(): Promise<{
+    appliedMigrations: MigrationInfo[]
+    baselineExists: boolean
+    latestMigration: Neo4jMigrationNode | null
+  }> {
+    const queries = [
+      {
+        parameters: {version: BASELINE},
+        statement: `MATCH (base:${MIGRATION_LABEL} {version: $version}) RETURN base`,
+      },
+      {
+        statement: `
+          MATCH (m:${MIGRATION_LABEL})
+          WHERE NOT (m)-[:MIGRATED_TO]->(:${MIGRATION_LABEL})
+          RETURN m LIMIT 1
+        `,
+      },
+      {
+        statement: `
+          MATCH (${MIGRATION_LABEL})-[r:MIGRATED_TO]->(m:${MIGRATION_LABEL})
+          RETURN m, r ORDER BY m.version
+        `,
+      },
+    ]
+
+    const session = this.driver.session()
+    const transaction = session.beginTransaction()
+
+    try {
+      const baselineExistsResult = await transaction.run(queries[0].statement, queries[0].parameters)
+      const latestMigrationResult = await transaction.run(queries[1].statement)
+      const migrationsResult = await transaction.run(queries[2].statement)
+
+      await transaction.commit()
+
+      return {
+        appliedMigrations: migrationsResult.records.map((record) => ({
+          node: record.get('m').properties,
+          relation: record.get('r').properties,
+        })),
+        baselineExists: baselineExistsResult.records.length > 0,
+        latestMigration: latestMigrationResult.records[0]?.get('m').properties || null,
+      }
+    } catch (error) {
+      await transaction.rollback()
+      throw error
+    } finally {
+      await session.close()
+    }
   }
 
-  public async fetchBaselineNode(): Promise<Neo4jMigrationNode> {
-    const [baseNode] = await this.neo4j
-      .query()
-      .matchNode('base', MIGRATION_LABEL)
-      .where({'base.version': BASELINE})
-      .return('base')
-      .run<Node<Neo4jMigrationNode>>()
-    return baseNode?.base?.properties
+  async initializeBaseline(): Promise<void> {
+    const queries = [
+      {
+        parameters: {version: BASELINE},
+        statement: `CREATE (base:${MIGRATION_LABEL} {version: $version})`,
+      },
+    ]
+    await this.executeQueries(queries)
   }
 
-  public async getLatestMigration(): Promise<Neo4jMigrationNode> {
-    const [latestMigration] = await this.neo4j
-      .query()
-      .matchNode('migration', MIGRATION_LABEL)
-      .raw(`WHERE NOT (migration)-[:MIGRATED_TO]->(:${MIGRATION_LABEL})`)
-      .return('migration')
-      .raw(`LIMIT 1`)
-      .run<Node<Neo4jMigrationNode>>()
-
-    return latestMigration?.migration?.properties
-  }
-
-  public async getMigrationInfo(): Promise<MigrationInfo[]> {
-    const nodes = await this.neo4j
-      .query()
-      .match([node(MIGRATION_LABEL), relation('out', 'r', 'MIGRATED_TO'), node('migration', MIGRATION_LABEL)])
-      .return(['migration', 'r'])
-      .run<Node<Neo4jMigrationNode & Neo4jMigrationRelation>>()
-
-    return nodes
-      .map((node) => ({
-        node: node.migration.properties,
-        relation: node.r.properties,
-      }))
-      .sort((a, b) =>
-        a.node.version.localeCompare(b.node.version, undefined, {
-          numeric: true,
-          sensitivity: 'base',
-        }),
-      )
-  }
-
-  public async getPreviousMigrations(): Promise<Neo4jMigrationNode[]> {
-    const rows = await this.neo4j
-      .query()
-      .raw(
-        `MATCH (b:${MIGRATION_LABEL} {version:"${BASELINE}"}) - [r:MIGRATED_TO*] -> (l:${MIGRATION_LABEL})
-         WHERE NOT (l)-[:MIGRATED_TO]->(:${MIGRATION_LABEL})
-         RETURN DISTINCT l`,
-      )
-      .run<Node<Neo4jMigrationNode>>()
-
-    return rows.map((row) => row.l.properties)
-  }
-
-  public getTransaction(): Transaction {
-    return this.neo4j.session()!.beginTransaction() as unknown as Transaction
+  async initializeSchema(): Promise<void> {
+    const schemaQueries = [
+      {
+        statement: `CREATE CONSTRAINT unique_version_${MIGRATION_LABEL} IF NOT EXISTS
+                    FOR (m:${MIGRATION_LABEL}) REQUIRE m.version IS UNIQUE`,
+      },
+      {
+        statement: `CREATE INDEX idx_version_${MIGRATION_LABEL} IF NOT EXISTS
+                    FOR (m:${MIGRATION_LABEL}) ON (m.version)`,
+      },
+    ]
+    await this.executeQueries(schemaQueries)
   }
 }

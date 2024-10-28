@@ -28,8 +28,6 @@ export default class Init extends Command {
     }),
   }
 
-  private readonly logger = new Logger()
-
   protected getConfigFile(configFileByArg?: string): string {
     const configFile = configFileByArg ?? path.join(process.cwd(), MORPHEUS_FILE_NAME)
     return configFile
@@ -44,9 +42,9 @@ export default class Init extends Command {
         configFile,
         force: flags.force,
       }).createMorpheusFile()
-      this.logger.success(`Configuration file created successfully: ${configFile}`)
+      Logger.info(`Configuration file created successfully: ${configFile}`)
     } catch (error) {
-      this.logger.error((error as Error).message)
+      Logger.error((error as Error).message)
     }
   }
 }

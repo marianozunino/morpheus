@@ -1,50 +1,57 @@
-import {Transaction} from 'neo4j-driver'
+/* eslint-disable no-await-in-loop */
 
 import {BASELINE} from '../constants'
 import {MigrationError} from '../errors'
-import {Neo4jMigrationNode} from '../types'
+import {MigrationInfo, Neo4jMigrationNode} from '../types'
 import {FileService} from './file.service'
 import {Logger} from './logger'
 import {Repository} from './neo4j.repository'
 import {generateChecksum} from './utils'
 
 export class MigrationService {
-  private latestAppliedVersion?: string
-  private readonly logger = new Logger()
+  private latestVersion?: string
 
   constructor(
     private readonly repository: Repository,
     private readonly fileService: FileService,
   ) {}
 
-  public async migrate(): Promise<void> {
+  async migrate(dryRun = false): Promise<void> {
     try {
-      await this.initializeMigration()
-      const pendingMigrations = await this.getPendingMigrations()
+      let state = await this.repository.getMigrationState()
 
+      if (!state.baselineExists) {
+        await this.initializeDatabase()
+        // Re-fetch state
+        state = await this.repository.getMigrationState()
+      }
+
+      this.latestVersion = state.latestMigration?.version
+      await this.validateMigrations(state.appliedMigrations)
+
+      const pendingMigrations = await this.getPendingMigrations()
       if (pendingMigrations.length === 0) {
-        this.logger.success('Database is up to date')
+        Logger.info('Database is up to date')
         return
       }
 
-      for (const fileName of pendingMigrations) {
-        // eslint-disable-next-line no-await-in-loop
-        await this.applyMigration(fileName)
-      }
+      await (dryRun ? this.previewMigrations(pendingMigrations) : this.applyMigrations(pendingMigrations))
     } catch (error) {
       throw new MigrationError(`Migration failed: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
-  private async applyMigration(fileName: string): Promise<void> {
-    const migration = await this.fileService.prepareMigration(fileName)
-    this.logger.success(`Executing migration: ${fileName}`)
+  private async applyMigrations(fileNames: string[]): Promise<void> {
+    for (const fileName of fileNames) {
+      const migration = await this.fileService.prepareMigration(fileName)
+      Logger.info(`Executing migration: ${fileName}`)
 
-    const trx = this.repository.getTransaction()
+      const startTime = Date.now()
 
-    try {
-      const duration = await this.executeMigrationStatements(migration.statements, trx)
-      await trx.commit()
+      // Use the new executeQueries method
+      await this.repository.executeQueries(migration.statements.map((statement) => ({statement})))
+
+      const duration = Date.now() - startTime
 
       const migrationNode: Neo4jMigrationNode = {
         checksum: generateChecksum(migration.statements),
@@ -54,80 +61,55 @@ export class MigrationService {
         version: migration.version,
       }
 
-      await this.saveMigrationNode(migrationNode, duration)
-      this.latestAppliedVersion = migration.version
-    } catch (error) {
-      await trx.rollback()
-      throw new MigrationError(
-        `Failed to apply migration ${fileName}: ${error instanceof Error ? error.message : String(error)}`,
-      )
+      await this.repository.applyMigration(migrationNode, this.latestVersion!, duration)
+      this.latestVersion = migration.version
     }
-  }
-
-  private async assertBaseNodeExists(): Promise<void> {
-    const baseNodeExists = await this.repository.fetchBaselineNode()
-    if (!baseNodeExists) {
-      await this.repository.createConstraints()
-      await this.repository.createBaseNode()
-    }
-  }
-
-  private async executeMigrationStatements(statements: string[], trx: Transaction): Promise<number> {
-    const startTime = Date.now()
-    for (const statement of statements) {
-      // eslint-disable-next-line no-await-in-loop
-      await this.repository.executeQuery(statement, trx)
-    }
-
-    return Date.now() - startTime
   }
 
   private async getPendingMigrations(): Promise<string[]> {
-    const fileNames = await this.fileService.getFileNamesFromMigrationsFolder()
-    return fileNames
-      .filter((fileName) => this.isMigrationPending(fileName))
+    const files = await this.fileService.getFileNamesFromMigrationsFolder()
+    return files
+      .filter((fileName) => {
+        const version = this.fileService.getMigrationVersionFromFileName(fileName)
+        return this.latestVersion === BASELINE || this.fileService.compareVersions(version, this.latestVersion!) > 0
+      })
       .sort((a, b) => this.fileService.compareVersions(a, b))
   }
 
-  private async initializeMigration(): Promise<void> {
-    await this.assertBaseNodeExists()
-    await this.setLatestAppliedVersion()
-    await this.validateMigrationsIntegrity()
+  private async initializeDatabase(): Promise<void> {
+    // Initialize schema first
+    await this.repository.initializeSchema()
+
+    // Then create baseline node
+    await this.repository.initializeBaseline()
+
+    Logger.info('Initialized database with schema and baseline')
   }
 
-  private isMigrationPending(fileName: string): boolean {
-    const version = this.fileService.getMigrationVersionFromFileName(fileName)
-    return (
-      this.latestAppliedVersion === BASELINE ||
-      this.fileService.compareVersions(version, this.latestAppliedVersion!) > 0
-    )
+  private async previewMigrations(fileNames: string[]): Promise<void> {
+    Logger.info('Dry run - no changes will be made to the database')
+
+    for (const fileName of fileNames) {
+      const migration = await this.fileService.prepareMigration(fileName)
+      Logger.info(`Would execute migration: ${fileName}`)
+      Logger.info('Statements:')
+      for (const stmt of migration.statements) {
+        Logger.info(stmt)
+      }
+    }
+
+    Logger.info(`Dry run complete - ${fileNames.length} migration(s) pending`)
   }
 
-  private async isValidChecksum(fileName: string, previousChecksum: string): Promise<boolean> {
-    const {statements} = await this.fileService.prepareMigration(fileName)
-    return previousChecksum === generateChecksum(statements)
-  }
-
-  private async saveMigrationNode(migrationNode: Neo4jMigrationNode, duration: number): Promise<void> {
-    const migrationQuery = this.repository.buildMigrationQuery(migrationNode, this.latestAppliedVersion!, duration)
-    await this.repository.executeQuery(migrationQuery)
-  }
-
-  private async setLatestAppliedVersion(): Promise<void> {
-    const {version} = await this.repository.getLatestMigration()
-    this.latestAppliedVersion = version
-  }
-
-  private async validateMigrationsIntegrity(): Promise<void> {
-    const migrations = await this.repository.getMigrationInfo()
-
+  private async validateMigrations(migrations: MigrationInfo[]): Promise<void> {
     for (const migration of migrations) {
-      const {checksum, source: fileName} = migration.node
+      const {statements} = await this.fileService.prepareMigration(migration.node.source)
+      const currentChecksum = generateChecksum(statements)
 
-      // eslint-disable-next-line no-await-in-loop
-      if (!(await this.isValidChecksum(fileName, checksum))) {
+      if (currentChecksum !== migration.node.checksum) {
         throw new MigrationError(
-          `Checksum mismatch for ${fileName}. The migration file has been modified after it was applied.`,
+          `Checksum mismatch for ${migration.node.source}. ` +
+            'The migration file has been modified after it was applied.',
         )
       }
     }

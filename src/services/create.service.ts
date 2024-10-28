@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import {ensureDir, pathExists, readdir, writeFile} from 'fs-extra'
 import path from 'node:path'
 import slugify from 'slugify'
 
@@ -8,15 +8,9 @@ import {MigrationOptions, Neo4jConfig} from '../types'
 import {Logger} from './logger'
 
 export class CreateService {
-  private readonly logger: Logger
   private readonly migrationTemplate: string = 'CREATE (agent:`007`) RETURN agent;'
 
-  constructor(
-    private readonly config: Pick<Neo4jConfig, 'migrationsPath'>,
-    logger: Logger = new Logger(),
-  ) {
-    this.logger = logger
-  }
+  constructor(private readonly config: Pick<Neo4jConfig, 'migrationsPath'>) {}
 
   public async generateMigration(fileName: string, options: MigrationOptions = {}): Promise<void> {
     try {
@@ -32,7 +26,7 @@ export class CreateService {
       const filePath = path.join(migrationsPath, fileNameWithPrefix)
 
       await this.createMigrationFile(filePath, options.template ?? this.migrationTemplate, options.force)
-      this.logger.success(`Migration file created: ${filePath}`)
+      Logger.info(`Migration file created: ${filePath}`)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error occurred'
       throw new MigrationError(`Failed to generate migration: ${message}`)
@@ -47,12 +41,12 @@ export class CreateService {
   }
 
   private async createMigrationFile(filePath: string, content: string, force = false): Promise<void> {
-    if (!force && (await fs.pathExists(filePath))) {
+    if (!force && (await pathExists(filePath))) {
       throw new MigrationError(`Migration file already exists: ${filePath}`)
     }
 
     try {
-      await fs.writeFile(filePath, content.trim() + '\n')
+      await writeFile(filePath, content.trim() + '\n')
     } catch (error) {
       throw new MigrationError(`Failed to write migration file: ${error}`)
     }
@@ -61,7 +55,7 @@ export class CreateService {
   private async createMigrationsFolder(): Promise<void> {
     try {
       const migrationsPath = this.getMigrationsPath()
-      await fs.ensureDir(migrationsPath)
+      await ensureDir(migrationsPath)
     } catch (error) {
       throw new MigrationError(`Failed to create migrations folder: ${error}`)
     }
@@ -87,7 +81,7 @@ export class CreateService {
       const migrationsPath = this.getMigrationsPath()
       await this.createMigrationsFolder()
 
-      const files = await fs.readdir(migrationsPath, {withFileTypes: true})
+      const files = await readdir(migrationsPath, {withFileTypes: true})
       return files
         .filter((file) => file.isFile() && this.isValidMigrationFile(file.name))
         .map((file) => file.name)

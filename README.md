@@ -82,7 +82,7 @@ $ npm install -g morpheus4j
 $ morpheus COMMAND
 running command...
 $ morpheus (--version)
-morpheus4j/4.0.0 linux-x64 node-v20.17.0
+morpheus4j/4.0.0 linux-x64 node-v20.16.0
 $ morpheus --help [COMMAND]
 USAGE
   $ morpheus COMMAND
@@ -135,8 +135,8 @@ Clean up migration-related database objects
 
 ```
 USAGE
-  $ morpheus clean [--json] [--drop-constraints] [-c <value>] [-m <value>] [-h <value>] [-p <value>] [-s
-    <value>] [-P <value>] [-u <value>] [-d <value>]
+  $ morpheus clean [--json] [--debug] [--drop-constraints] [-c <value>] [-m <value>] [-h <value>] [-p
+    <value>] [-s <value>] [-P <value>] [-u <value>] [-d <value>]
 
 FLAGS
   -P, --password=<value>        Neo4j password. Env: 'MORPHEUS_PASSWORD'
@@ -150,7 +150,8 @@ FLAGS
       --drop-constraints        Additionally remove all Morpheus-related database constraints
 
 GLOBAL FLAGS
-  --json  Format output as json.
+  --debug  Enable debug logging
+  --json   Format output as json.
 
 DESCRIPTION
   Clean up migration-related database objects
@@ -202,8 +203,8 @@ Info up migration-related database objects
 
 ```
 USAGE
-  $ morpheus info [--json] [-c <value>] [-m <value>] [-h <value>] [-p <value>] [-s <value>] [-P <value>]
-    [-u <value>] [-d <value>]
+  $ morpheus info [--json] [--debug] [-c <value>] [-m <value>] [-h <value>] [-p <value>] [-s <value>] [-P
+    <value>] [-u <value>] [-d <value>]
 
 FLAGS
   -P, --password=<value>        Neo4j password. Env: 'MORPHEUS_PASSWORD'
@@ -216,7 +217,8 @@ FLAGS
   -u, --username=<value>        Neo4j username. Env: 'MORPHEUS_USERNAME'
 
 GLOBAL FLAGS
-  --json  Format output as json.
+  --debug  Enable debug logging
+  --json   Format output as json.
 
 DESCRIPTION
   Info up migration-related database objects
@@ -265,8 +267,8 @@ Execute pending database migrations in sequential order
 
 ```
 USAGE
-  $ morpheus migrate [--json] [-c <value>] [-m <value>] [-h <value>] [-p <value>] [-s <value>] [-P <value>]
-    [-u <value>] [-d <value>]
+  $ morpheus migrate [--json] [--debug] [-c <value>] [-m <value>] [-h <value>] [-p <value>] [-s <value>] [-P
+    <value>] [-u <value>] [-d <value>] [--dry-run]
 
 FLAGS
   -P, --password=<value>        Neo4j password. Env: 'MORPHEUS_PASSWORD'
@@ -277,9 +279,11 @@ FLAGS
   -p, --port=<value>            Neo4j port. Env: 'MORPHEUS_PORT'
   -s, --scheme=<value>          Neo4j scheme. Env: 'MORPHEUS_SCHEME'
   -u, --username=<value>        Neo4j username. Env: 'MORPHEUS_USERNAME'
+      --dry-run                 Perform a dry run - no changes will be made to the database
 
 GLOBAL FLAGS
-  --json  Format output as json.
+  --debug  Enable debug logging
+  --json   Format output as json.
 
 DESCRIPTION
   Execute pending database migrations in sequential order
