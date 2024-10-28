@@ -1,6 +1,5 @@
 import {crc32} from 'crc'
-
-import {At, In} from '../types'
+import {DateTime, Duration} from 'neo4j-driver'
 
 export const generateChecksum = (statements: string[]): string => {
   let crcValue = 0
@@ -12,13 +11,15 @@ export const generateChecksum = (statements: string[]): string => {
   return crcValue.toString()
 }
 
-export const convertInToTime = (inDate: In): string => {
-  const seconds = inDate.seconds + inDate.nanoseconds / 1_000_000_000
-  return `${seconds}s`
+export const convertInToTime = (inDate: Duration): string => {
+  const seconds = inDate.seconds.low + inDate.seconds.high * 2 ** 32
+  const nanoseconds = inDate.nanoseconds.low + inDate.nanoseconds.high * 2 ** 32
+
+  const totalSeconds = seconds + nanoseconds / 1_000_000_000
+  return `${totalSeconds}s`
 }
 
-export const convertAtToDate = (at: At, timeZoneOffsetSeconds: number): Date => {
-  const date = new Date(at.year, at.month - 1, at.day, at.hour, at.minute, at.second, at.nanosecond / 1000)
-  date.setSeconds(date.getSeconds() - timeZoneOffsetSeconds)
+export const convertAtToDate = (at: DateTime): Date => {
+  const date = at.toStandardDate()
   return date
 }

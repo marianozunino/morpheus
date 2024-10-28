@@ -1,25 +1,22 @@
-import {Connection} from 'cypher-query-builder'
+import {Driver, auth, driver} from 'neo4j-driver'
 
 import {Neo4jConfig} from '../types'
 
-export const getDatabaseConnection = async (dbConfig: Neo4jConfig) => {
+export const getDatabaseConnection = async (dbConfig: Neo4jConfig): Promise<Driver> => {
   const connectionUrl = `${dbConfig.scheme}://${dbConfig.host}:${dbConfig.port}`
 
-  const connection = new Connection(connectionUrl, {
-    password: dbConfig.password,
-    username: dbConfig.username,
+  const neo4jDriver = driver(connectionUrl, auth.basic(dbConfig.username, dbConfig.password))
+
+  // Test the connection
+  const session = neo4jDriver.session({
+    database: dbConfig.database,
   })
 
-  if (dbConfig.database) {
-    connection.session = function () {
-      if (this.open) {
-        return this.driver.session({database: dbConfig.database})
-      }
-
-      return null
-    }
+  try {
+    await session.run('RETURN 1')
+  } finally {
+    await session.close()
   }
 
-  await connection.query().raw('RETURN 1').run()
-  return connection
+  return neo4jDriver
 }

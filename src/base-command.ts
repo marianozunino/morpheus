@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import {DEFAULT_MIGRATIONS_PATH, MORPHEUS_FILE_NAME} from './constants'
 import {ConfigService} from './services/config.service'
+import {Logger} from './services/logger'
 import {AuthFlags, ConfigFlags, ConnectionFlags, DatabaseFlags} from './shared-flags'
 import {Neo4jConfig} from './types'
 
@@ -10,6 +11,10 @@ export type Flags<T extends typeof Command> = Interfaces.InferredFlags<(typeof B
 export type Args<T extends typeof Command> = Interfaces.InferredArgs<T['args']>
 
 export abstract class BaseCommand<T extends typeof Command> extends Command {
+  static baseFlags = {
+    debug: Flags.boolean({default: false, description: 'Enable debug logging', helpGroup: 'GLOBAL'}),
+  }
+
   static enableJsonFlag = true
 
   // define flags that can be inherited by any command that extends BaseCommand
@@ -70,5 +75,7 @@ export abstract class BaseCommand<T extends typeof Command> extends Command {
     })
     this.flags = flags as Flags<T>
     this.args = args as Args<T>
+
+    Logger.initialize(flags.json, flags.debug)
   }
 }

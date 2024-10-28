@@ -1,123 +1,84 @@
-import {blue, gray, green, red, white, yellow} from 'kleur'
-import {Logger as WinstonLogger, createLogger, format, transports} from 'winston'
+import {blue, gray, red, yellow} from 'kleur'
 
-type LogLevel = 'debug' | 'error' | 'info' | 'success' | 'warn'
-type ColorFunction = (str: string) => string
-
-// Define custom log levels including 'success'
-const customLevels = {
-  colors: {
-    debug: 'gray',
-    error: 'red',
-    info: 'blue',
-    success: 'green',
-    warn: 'yellow',
-  },
-  levels: {
-    debug: 4,
-    error: 0,
-    info: 3,
-    success: 2,
-    warn: 1,
-  },
-}
+type LogLevel = 'debug' | 'error' | 'info' | 'warn'
+type LogMessage = Error | string
 
 export class Logger {
-  private logger: WinstonLogger
+  private static logLevel: LogLevel = 'info'
+  private static useJson: boolean = false
 
-  constructor() {
-    // Create Winston logger instance with custom levels
-    this.logger = createLogger({
-      format: format.combine(
-        format.timestamp(),
-        format.printf(({level, message, timestamp}) => {
-          const color = this.getColorForLevel(level as LogLevel)
-          const prefix = this.getLevelPrefix(level as LogLevel)
-          return `${gray(timestamp as string)} ${color(prefix)} ${message}`
-        }),
-      ),
-      level: 'debug', // Allow all log levels
-      levels: customLevels.levels,
-      transports: [new transports.Console()],
-    })
+  static debug(message: LogMessage): void {
+    if (!this.shouldLog('debug')) return
+    const timestamp = new Date().toISOString()
+    console.debug(this.formatMessage('debug', message, timestamp))
   }
 
-  public debug(message: string): void {
-    this.logger.debug(message)
-  }
+  static error(message: LogMessage, error?: Error): void {
+    if (!this.shouldLog('error')) return
+    const timestamp = new Date().toISOString()
+    const logMessage = this.formatMessage('error', message, timestamp)
+    console.error(logMessage)
 
-  public error(message: string, error?: Error): void {
-    this.logger.error(message)
     if (error) {
-      this.logger.error(error.stack || error.message)
+      console.error(this.formatMessage('error', error.stack || error.message, timestamp))
     }
   }
 
-  public info(message: string): void {
-    this.logger.info(message)
+  static info(message: LogMessage): void {
+    if (!this.shouldLog('info')) return
+    const timestamp = new Date().toISOString()
+    console.log(this.formatMessage('info', message, timestamp))
   }
 
-  public success(message: string): void {
-    this.logger.log('success', message)
+  static initialize(useJson: boolean = false, deubg: boolean = false) {
+    this.logLevel = deubg ? 'debug' : 'info'
+    this.useJson = useJson
   }
 
-  public warn(message: string): void {
-    this.logger.warn(message)
+  static warn(message: LogMessage): void {
+    if (!this.shouldLog('warn')) return
+    const timestamp = new Date().toISOString()
+    console.warn(this.formatMessage('warn', message, timestamp))
   }
 
-  private getColorForLevel(level: LogLevel): ColorFunction {
-    switch (level) {
-      case 'error': {
-        return red
-      }
-
-      case 'warn': {
-        return yellow
-      }
-
-      case 'info': {
-        return blue
-      }
-
-      case 'debug': {
-        return gray
-      }
-
-      case 'success': {
-        return green
-      }
-
-      default: {
-        return white
-      }
+  private static formatMessage(level: LogLevel, message: LogMessage, timestamp: string): string {
+    if (this.useJson) {
+      return JSON.stringify({
+        level,
+        message: message instanceof Error ? message.message : message,
+        timestamp,
+      })
     }
+
+    const prefix = this.getLevelPrefix(level)
+    const color = this.getColorForLevel(level)
+    return `${gray(timestamp)} ${color(prefix)} ${message}`
   }
 
-  private getLevelPrefix(level: LogLevel): string {
-    switch (level) {
-      case 'error': {
-        return '✖'
-      }
-
-      case 'warn': {
-        return '⚠'
-      }
-
-      case 'info': {
-        return 'ℹ'
-      }
-
-      case 'debug': {
-        return '🔍'
-      }
-
-      case 'success': {
-        return '✔'
-      }
-
-      default: {
-        return '•'
-      }
+  private static getColorForLevel(level: LogLevel) {
+    const colors = {
+      debug: gray,
+      default: gray,
+      error: red,
+      info: blue,
+      warn: yellow,
     }
+    return colors[level] || colors.default
+  }
+
+  private static getLevelPrefix(level: LogLevel): string {
+    const prefixes = {
+      debug: 'DEBUG',
+      default: '•',
+      error: '✖',
+      info: 'ℹ',
+      warn: '⚠',
+    }
+    return prefixes[level] || prefixes.default
+  }
+
+  private static shouldLog(level: LogLevel): boolean {
+    const levels = ['debug', 'info', 'warn', 'error']
+    return levels.indexOf(level) >= levels.indexOf(this.logLevel)
   }
 }

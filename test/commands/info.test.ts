@@ -3,7 +3,6 @@ import {expect} from 'chai'
 import {Neo4jTestContainer} from '../test-container'
 import * as fs from 'fs-extra'
 import * as path from 'node:path'
-import {MORPHEUS_FILE_NAME} from '../../src/constants'
 import {tmpdir} from 'os'
 
 const chance = require('chance').Chance()
@@ -12,6 +11,7 @@ describe('info', () => {
   let container: Neo4jTestContainer
   const configDir = path.join(tmpdir(), 'morpheus')
   const migrationsDir = path.join(configDir, 'migrations')
+  let commandResult: Awaited<ReturnType<typeof runCommand>>
 
   before(async () => {
     // Set up the Neo4j test container
@@ -32,6 +32,12 @@ describe('info', () => {
     }
   })
 
+  afterEach(function () {
+    if (this.currentTest?.state === 'failed' && commandResult) {
+      console.log(commandResult)
+    }
+  })
+
   beforeEach(async () => {
     await container.wipe()
   })
@@ -39,6 +45,7 @@ describe('info', () => {
   it('should fail to run info if morpheus.json does not exist', async () => {
     // Run migrate command
     const out = await runCommand(['info', '-c', path.join(tmpdir(), chance.word({length: 10}))])
+    commandResult = out
 
     // Verify migration applied successfully
     expect(out.error?.message).to.contain('Configuration validation failed')
@@ -64,6 +71,7 @@ describe('info', () => {
         '-m',
         randomDir,
       ])
+      commandResult = out
 
       // Verify migration applied successfully
       expect(out.error?.message).to.contain('The client is unauthorized due to authentication failure.')
@@ -88,6 +96,7 @@ describe('info', () => {
         '-m',
         randomDir,
       ])
+      commandResult = out
 
       // Verify migration applied successfully
       expect(out.error?.message).to.contain('Failed to connect to server.')
@@ -112,6 +121,7 @@ describe('info', () => {
         '-m',
         randomDir,
       ])
+      commandResult = out
 
       // Verify migration applied successfully
       expect(out.error?.message).to.contain('Failed to connect to server.')
@@ -135,6 +145,8 @@ describe('info', () => {
       '-m',
       randomDir,
     ])
+    commandResult = out
+
     expect(out.stdout).to.contain('Database is up to date, but there are no migrations in the migrations folder')
   })
 
@@ -178,6 +190,7 @@ describe('info', () => {
       '-m',
       randomDir,
     ])
+    commandResult = out
 
     expect(out.stdout).to.contain(file2)
     expect(out.stdout).to.contain(file1)
@@ -227,6 +240,7 @@ describe('info', () => {
       '-m',
       randomDir,
     ])
+    commandResult = out
 
     expect(out.stdout).to.contain(file3)
     expect(out.stdout).to.contain(file2)
@@ -277,8 +291,10 @@ describe('info', () => {
       randomDir,
     ])
 
+    commandResult = out
+
     expect(out.stdout).to.contain(file2)
     expect(out.stdout).to.contain(file1)
-    expect(out.stdout).to.contain('There are more migrations in the database than in the migrations folder')
+    expect(out.stderr).to.contain('There are more migrations in the database than in the migrations folder')
   })
 })

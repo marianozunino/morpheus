@@ -9,6 +9,7 @@ const chance = require('chance').Chance()
 describe('create', () => {
   let configDir = path.join(tmpdir(), 'morpheus')
   let migrationsDir = path.join(configDir, 'migrations')
+  let commandResult: Awaited<ReturnType<typeof runCommand>>
 
   before(async () => {
     if (fs.existsSync(configDir)) {
@@ -22,17 +23,25 @@ describe('create', () => {
     }
   })
 
+  afterEach(function () {
+    if (this.currentTest?.state === 'failed' && commandResult) {
+      console.log(commandResult)
+    }
+  })
+
   it('creates a new migration file successfully', async () => {
     const confFile = `${configDir}/config.json`
     await runCommand(`init -c ${confFile}`)
 
-    const {stdout} = await runCommand(['create', 'create_test_migration', '-c', confFile])
+    const result = await runCommand(['create', 'create_test_migration', '-c', confFile])
+    commandResult = result
+    const stdout = result.stdout
 
     // Verify command output
     expect(stdout).to.contain('Migration file created')
 
     // Check if the migration file was created
-    const createdFile = stdout.split('✔ Migration file created: ')[1].trim()
+    const createdFile = stdout.split('Migration file created: ')[1].trim()
     expect(fs.existsSync(createdFile)).to.be.true
 
     // Ensure migration file content is valid
@@ -44,9 +53,12 @@ describe('create', () => {
     const confFile = `${configDir}/config.json`
     await runCommand(`init -c ${confFile}`)
 
-    const {stdout} = await runCommand(['create', 'custom_test_migration', '-c', confFile])
+    const result = await runCommand(['create', 'custom_test_migration', '-c', confFile])
 
-    const createdFile = stdout.split('✔ Migration file created: ')[1].trim()
+    commandResult = result
+    const stdout = result.stdout
+
+    const createdFile = stdout.split('Migration file created: ')[1].trim()
     expect(fs.existsSync(createdFile)).to.be.true
 
     // Verify command output
@@ -57,9 +69,11 @@ describe('create', () => {
     const confFile = `${configDir}/config.json`
     await runCommand(`init -c ${confFile}`)
 
-    const {stdout} = await runCommand(['create', 'custom_test_migration', '-c', confFile, '-m', migrationsDir])
+    const result = await runCommand(['create', 'custom_test_migration', '-c', confFile, '-m', migrationsDir])
+    commandResult = result
+    const stdout = result.stdout
 
-    const createdFile = stdout.split('✔ Migration file created: ')[1].trim()
+    const createdFile = stdout.split('Migration file created: ')[1].trim()
     expect(fs.existsSync(createdFile)).to.be.true
     expect(stdout).to.contain(migrationsDir)
   })
@@ -71,10 +85,12 @@ describe('create', () => {
     const randomDir = `${migrationsDir}/${chance.word({length: 10})}`
 
     process.env.MORPHEUS_MIGRATIONS_PATH = randomDir
-    const {stdout} = await runCommand(['create', 'custom_test_migration', '-c', confFile])
+    const result = await runCommand(['create', 'custom_test_migration', '-c', confFile])
+    commandResult = result
+    const stdout = result.stdout
     process.env.MORPHEUS_MIGRATIONS_PATH = undefined
 
-    const createdFile = stdout.split('✔ Migration file created: ')[1].trim()
+    const createdFile = stdout.split('Migration file created: ')[1].trim()
     expect(fs.existsSync(createdFile)).to.be.true
     expect(stdout).to.contain(randomDir)
   })

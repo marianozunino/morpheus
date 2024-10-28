@@ -1,3 +1,4 @@
+import {DateTime, Duration} from 'neo4j-driver'
 import {z} from 'zod'
 
 export enum Neo4jScheme {
@@ -41,27 +42,8 @@ export type MigrationInfo = {
 }
 
 export type Neo4jMigrationRelation = {
-  at: At
-  in: In
-}
-
-export type At = {
-  day: number
-  hour: number
-  minute: number
-  month: number
-  nanosecond: number
-  second: number
-  timeZoneId: string
-  timeZoneOffsetSeconds: string
-  year: number
-}
-
-export type In = {
-  days: number
-  months: number
-  nanoseconds: number
-  seconds: number
+  at: DateTime
+  in: Duration
 }
 
 export type FileInfo = {

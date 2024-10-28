@@ -1,4 +1,4 @@
-import fs from 'fs-extra'
+import {ensureDirSync, existsSync, writeJSONSync} from 'fs-extra'
 import path from 'node:path'
 
 import {DEFAULT_MIGRATIONS_PATH} from '../constants'
@@ -16,7 +16,7 @@ export class InitService {
     if (this.options.force) {
       this.writeConfigFile()
     } else {
-      if (fs.existsSync(this.options.configFile)) {
+      if (existsSync(this.options.configFile)) {
         throw new Error(`Morpheus file already exists: ${this.options.configFile}`)
       }
 
@@ -35,7 +35,7 @@ export class InitService {
       username: 'neo4j',
     }
 
-    fs.ensureDirSync(path.dirname(this.options.configFile))
-    fs.writeJSONSync(this.options.configFile, defaultConfig, {spaces: 2})
+    ensureDirSync(path.dirname(this.options.configFile))
+    writeJSONSync(this.options.configFile, defaultConfig, {spaces: 2})
   }
 }
