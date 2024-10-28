@@ -1,3 +1,10 @@
+# [4.1.0](https://github.com/marianozunino/morpheus/compare/v4.0.0...v4.1.0) (2024-10-28)
+
+
+### Features
+
+* Add --debug and --dry-run flags for enhanced migration control ([7785af7](https://github.com/marianozunino/morpheus/commit/7785af71d9b87d6eff439ba5ab9b04f1d80c750a))
+
 # [4.0.0](https://github.com/marianozunino/morpheus/compare/v3.5.1...v4.0.0) (2024-10-25)
 
 
