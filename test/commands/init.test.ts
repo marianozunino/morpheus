@@ -47,6 +47,16 @@ describe('init', () => {
     expect(fileContent).to.not.equal('existing content')
   })
 
+  it('created a morpheus file in the current directory if no -c flag is used', async () => {
+    // delete possibly existing morpheus file
+    fs.removeSync(path.join(process.cwd(), MORPHEUS_FILE_NAME))
+    const result = await runCommand(['init'])
+    commandResult = result
+    const stdout = result.stdout
+    expect(stdout).to.contain('Configuration file created ')
+    expect(fs.existsSync(path.join(process.cwd(), MORPHEUS_FILE_NAME))).to.be.true
+  })
+
   it('fails to create morpheus file if it exists and force is not used', async () => {
     const filePath = path.join(configDir, MORPHEUS_FILE_NAME)
     fs.ensureDirSync(path.dirname(filePath))

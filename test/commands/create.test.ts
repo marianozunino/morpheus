@@ -13,7 +13,7 @@ describe('create', () => {
   let commandResult: Awaited<ReturnType<typeof runCommand>>
 
   beforeEach(() => {
-    Logger.initialize() // Reset logger
+    Logger.initialize(false, false) // Reset logger
   })
 
   before(async () => {

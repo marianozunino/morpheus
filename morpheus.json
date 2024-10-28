@@ -2,8 +2,9 @@
   "database": "neo4j",
   "host": "localhost",
   "migrationsPath": "neo4j/migrations",
-  "password": "password",
+  "password": "neo4j",
   "port": 7687,
   "scheme": "neo4j",
+  "transactionMode": "PER_MIGRATION",
   "username": "neo4j"
 }

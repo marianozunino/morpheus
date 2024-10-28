@@ -4,6 +4,7 @@ import path from 'node:path'
 import {MORPHEUS_FILE_NAME} from '../constants'
 import {ConfigService} from '../services/config.service'
 import {CreateService} from '../services/create.service'
+import {Logger} from '../services/logger'
 import {ConfigFlags} from '../shared-flags'
 
 export default class Create extends Command {
@@ -16,6 +17,8 @@ export default class Create extends Command {
   }
 
   static override description = 'Generate a new timestamped migration file with boilerplate code'
+
+  static enableJsonFlag = true
 
   static override examples = [
     '<%= config.bin %> create add-user-nodes',
@@ -34,6 +37,8 @@ export default class Create extends Command {
 
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(Create)
+
+    Logger.initialize(flags.json, flags.debug)
 
     try {
       const configFile = this.getConfigFile(flags.configFile)

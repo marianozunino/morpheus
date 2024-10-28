@@ -10,6 +10,17 @@ export enum Neo4jScheme {
   NEO4J_SECURE_SELF_SIGNED = 'neo4j+ssc',
 }
 
+export enum TransactionMode {
+  /**
+   * Run all statements in one transaction. May need more memory, but it's generally safer. Either the migration runs as a whole or not at all.
+   */
+  PER_MIGRATION = 'PER_MIGRATION',
+  /**
+   * Runs each statement in a separate transaction. May leave your database in an inconsistent state when one statement fails.
+   */
+  PER_STATEMENT = 'PER_STATEMENT',
+}
+
 export const Neo4jConfigSchema = z.object({
   database: z.string().optional(),
   host: z.string().min(1),
@@ -17,6 +28,7 @@ export const Neo4jConfigSchema = z.object({
   password: z.string().min(1),
   port: z.number().int().positive(),
   scheme: z.nativeEnum(Neo4jScheme),
+  transactionMode: z.nativeEnum(TransactionMode).default(TransactionMode.PER_STATEMENT).optional(),
   username: z.string().min(1),
 })
 
@@ -32,8 +44,7 @@ export interface Neo4jMigrationNode {
 
 export interface MigrationOptions {
   dryRun?: boolean
-  force?: boolean
-  template?: string
+  transactionMode?: TransactionMode
 }
 
 export type MigrationInfo = {

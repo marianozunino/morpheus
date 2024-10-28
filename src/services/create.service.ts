@@ -1,10 +1,10 @@
-import {ensureDir, pathExists, readdir, writeFile} from 'fs-extra'
+import {ensureDir, readdir, writeFile} from 'fs-extra'
 import path from 'node:path'
 import slugify from 'slugify'
 
 import {DEFAULT_MIGRATIONS_PATH, MIGRATION_NAME_REGEX, STARTING_VERSION, VALID_FILE_EXTENSIONS} from '../constants'
 import {MigrationError} from '../errors'
-import {MigrationOptions, Neo4jConfig} from '../types'
+import {Neo4jConfig} from '../types'
 import {Logger} from './logger'
 
 export class CreateService {
@@ -12,7 +12,7 @@ export class CreateService {
 
   constructor(private readonly config: Pick<Neo4jConfig, 'migrationsPath'>) {}
 
-  public async generateMigration(fileName: string, options: MigrationOptions = {}): Promise<void> {
+  public async generateMigration(fileName: string): Promise<void> {
     try {
       this.validateFileName(fileName)
 
@@ -25,7 +25,7 @@ export class CreateService {
       const fileNameWithPrefix = `V${newVersion}__${safeFileName}.cypher`
       const filePath = path.join(migrationsPath, fileNameWithPrefix)
 
-      await this.createMigrationFile(filePath, options.template ?? this.migrationTemplate, options.force)
+      await this.createMigrationFile(filePath, this.migrationTemplate)
       Logger.info(`Migration file created: ${filePath}`)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error occurred'
@@ -40,11 +40,7 @@ export class CreateService {
     })
   }
 
-  private async createMigrationFile(filePath: string, content: string, force = false): Promise<void> {
-    if (!force && (await pathExists(filePath))) {
-      throw new MigrationError(`Migration file already exists: ${filePath}`)
-    }
-
+  private async createMigrationFile(filePath: string, content: string): Promise<void> {
     try {
       await writeFile(filePath, content.trim() + '\n')
     } catch (error) {

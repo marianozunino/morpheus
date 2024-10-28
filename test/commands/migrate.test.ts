@@ -1,5 +1,8 @@
 import {runCommand} from '@oclif/test'
+import sinon from 'sinon'
 import {expect} from 'chai'
+import * as neo4j from 'neo4j-driver'
+
 import {Neo4jTestContainer} from '../test-container'
 import * as fs from 'fs-extra'
 import * as path from 'node:path'
@@ -394,5 +397,134 @@ describe('migrate', () => {
 
     // Assert that no migrations have been applied
     expect(migrationCount).to.equal(1) // Expecting baseline to be applied
+  })
+
+  describe('transaction mode', () => {
+    let commitSpy: sinon.SinonSpy
+
+    beforeEach(() => {
+      commitSpy = sinon.stub(neo4j.Transaction.prototype, 'commit').callThrough()
+    })
+
+    afterEach(() => {
+      sinon.restore()
+    })
+
+    it('should run a transaction per statement', async () => {
+      const randomDir = `${migrationsDir}/${chance.word({length: 5})}/`
+
+      // Run migrate command
+      await runCommand([
+        'migrate',
+        '-p',
+        container.getPort().toString(),
+        '-h',
+        container.getHost(),
+        '-u',
+        'neo4j',
+        '-P',
+        'password',
+        '-m',
+        randomDir,
+        '--transaction-mode',
+        'PER_MIGRATION',
+      ])
+
+      const file1 = `migration-${chance.word({length: 4})}`
+      const createdFileOutput = await runCommand(['create', file1, '-m', randomDir])
+      const createdFile = createdFileOutput.stdout.split('Migration file created: ')[1].trim()
+
+      // Add multiple statements to the migration file
+      fs.appendFileSync(
+        createdFile,
+        `
+CREATE (x:Node {name: "test"});
+CREATE (w:Node {name: "test"});
+CREATE (y:Node {name: "test2"});`,
+      )
+
+      // reset counter to 0
+      commitSpy.resetHistory()
+
+      // Run migrate command
+      const out = await runCommand([
+        'migrate',
+        '-p',
+        container.getPort().toString(),
+        '-h',
+        container.getHost(),
+        '-u',
+        'neo4j',
+        '-P',
+        'password',
+        '-m',
+        randomDir,
+        '--transaction-mode',
+        'PER_STATEMENT',
+      ])
+
+      commandResult = out
+
+      // Assert number of transactions
+      expect(commitSpy.callCount).to.equal(5, 'Should commit one transaction per statement') // 1 per stament + 1 per migration node
+    })
+
+    it('should run a transaction per migration', async () => {
+      const randomDir = `${migrationsDir}/${chance.word({length: 5})}/`
+
+      // Run migrate command
+      await runCommand([
+        'migrate',
+        '-p',
+        container.getPort().toString(),
+        '-h',
+        container.getHost(),
+        '-u',
+        'neo4j',
+        '-P',
+        'password',
+        '-m',
+        randomDir,
+        '--transaction-mode',
+        'PER_MIGRATION',
+      ])
+
+      const file1 = `migration-${chance.word({length: 4})}`
+      const createdFileOutput = await runCommand(['create', file1, '-m', randomDir])
+      const createdFile = createdFileOutput.stdout.split('Migration file created: ')[1].trim()
+
+      // Add multiple statements to the migration file
+      fs.appendFileSync(
+        createdFile,
+        `
+CREATE (x:Node {name: "test"});
+CREATE (w:Node {name: "test"});
+CREATE (y:Node {name: "test2"});`,
+      )
+
+      // reset counter to 0
+      commitSpy.resetHistory()
+
+      // Run migrate command
+      const out = await runCommand([
+        'migrate',
+        '-p',
+        container.getPort().toString(),
+        '-h',
+        container.getHost(),
+        '-u',
+        'neo4j',
+        '-P',
+        'password',
+        '-m',
+        randomDir,
+        '--transaction-mode',
+        'PER_MIGRATION',
+      ])
+
+      commandResult = out
+
+      expect(commitSpy.callCount).to.equal(2, 'Should commit one transaction per statement') // 1 per migration + 1 per migration node
+    })
   })
 })
