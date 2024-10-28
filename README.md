@@ -2,7 +2,9 @@
 
 [![build-deploy](https://github.com/marianozunino/morpheus/actions/workflows/build_deploy.yml/badge.svg)](https://github.com/marianozunino/morpheus/actions/workflows/build_deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Coverage Status](https://coveralls.io/repos/github/marianozunino/morpheus/badge.svg)](https://coveralls.io/github/marianozunino/morpheus)
+<a href='https://coveralls.io/github/marianozunino/morpheus?branch=master'>
+  <img src='https://coveralls.io/repos/github/marianozunino/morpheus/badge.svg?branch=master&kill_cache=1' alt='Coverage Status'>
+</a>
 ![npm type definitions](https://img.shields.io/npm/types/morpheus4j)
 [![Downloads/week](https://img.shields.io/npm/dw/morpheus4j.svg)](https://npmjs.org/package/morpheus4j)
 [![Version](https://img.shields.io/npm/v/morpheus4j.svg)](https://npmjs.org/package/morpheus4j)

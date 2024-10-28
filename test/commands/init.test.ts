@@ -4,10 +4,15 @@ import * as fs from 'fs-extra'
 import * as path from 'node:path'
 import {MORPHEUS_FILE_NAME} from '../../src/constants'
 import {tmpdir} from 'os'
+import {Logger} from '../../src/services/logger'
 
 describe('init', () => {
   let configDir = path.join(tmpdir(), 'morpheus')
   let commandResult: Awaited<ReturnType<typeof runCommand>>
+
+  beforeEach(() => {
+    Logger.initialize() // Reset logger
+  })
 
   before(async () => {
     if (fs.existsSync(configDir)) {

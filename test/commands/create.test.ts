@@ -3,6 +3,7 @@ import {expect} from 'chai'
 import * as fs from 'fs-extra'
 import * as path from 'node:path'
 import {tmpdir} from 'os'
+import {Logger} from '../../src/services/logger'
 
 const chance = require('chance').Chance()
 
@@ -10,6 +11,10 @@ describe('create', () => {
   let configDir = path.join(tmpdir(), 'morpheus')
   let migrationsDir = path.join(configDir, 'migrations')
   let commandResult: Awaited<ReturnType<typeof runCommand>>
+
+  beforeEach(() => {
+    Logger.initialize() // Reset logger
+  })
 
   before(async () => {
     if (fs.existsSync(configDir)) {

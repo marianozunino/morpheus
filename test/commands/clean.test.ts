@@ -13,6 +13,10 @@ describe('clean', () => {
   let configDir = path.join(tmpdir(), 'morpheus')
   let commandResult: Awaited<ReturnType<typeof runCommand>>
 
+  beforeEach(() => {
+    Logger.initialize() // Reset logger
+  })
+
   before(async () => {
     container = new Neo4jTestContainer()
     await container.start()
@@ -32,7 +36,6 @@ describe('clean', () => {
     if (this.currentTest?.state === 'failed' && commandResult) {
       console.log(commandResult)
     }
-    Logger.initialize() // Reset logger
   })
 
   it('cleans up Neo4j migrations related data', async () => {
