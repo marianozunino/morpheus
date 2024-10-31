@@ -84,7 +84,7 @@ $ npm install -g morpheus4j
 $ morpheus COMMAND
 running command...
 $ morpheus (--version)
-morpheus4j/4.1.0 linux-x64 node-v20.16.0
+morpheus4j/4.1.0 linux-x64 node-v20.18.0
 $ morpheus --help [COMMAND]
 USAGE
   $ morpheus COMMAND
