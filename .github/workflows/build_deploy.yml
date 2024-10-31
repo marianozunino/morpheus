@@ -1,9 +1,5 @@
-# This is a basic workflow that is manually triggered
-
 name: build-deploy
 
-# Controls when the action will run. Workflow runs when manually triggered using the UI
-# or API.
 on:
   push:
     branches:
@@ -12,19 +8,15 @@ on:
     branches:
       - master
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # Build and deploy all the components
   build-deploy:
     name: Build-and-Deploy
     runs-on: ubuntu-latest
 
     steps:
-      # Get deploy code
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          # This is important for semantic-release to have access to the full history
           fetch-depth: 0
 
       - name: Get npm cache
@@ -40,21 +32,23 @@ jobs:
         with:
           node-version: 'lts/*'
 
-      # Build using the custom script (sam build + custom builds)
-      - name: Build
-        shell: bash
+      - name: Install Dependencies
+        run: npm ci
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm run test:cov
+
+      - name: Generate oclif Artifacts
         run: |
-          npm ci
           npm run build
-
-      - name: Generate oclif artifacts
-        run: |
-          # Generate readme
-          npm run prepack
-
+          npx oclif manifest
+          npx oclif readme
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           git add README.md
@@ -73,10 +67,11 @@ jobs:
             ['master']
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Coveralls
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: './coverage/lcov.info'
+

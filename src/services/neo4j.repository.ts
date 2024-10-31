@@ -65,6 +65,24 @@ export class Repository {
     }
   }
 
+  async executeQuery(query: {parameters?: RecordShape; statement: string}): Promise<void> {
+    const session = this.driver.session()
+    const transaction = session.beginTransaction()
+    try {
+      Logger.debug(`Executing query: ${query.statement}`)
+      if (query.parameters) {
+        Logger.debug(`With parameters: ${JSON.stringify(query.parameters)}`)
+      }
+
+      await transaction.commit()
+    } catch (error) {
+      await transaction.rollback()
+      throw error
+    } finally {
+      await session.close()
+    }
+  }
+
   async getMigrationState(): Promise<{
     appliedMigrations: MigrationInfo[]
     baselineExists: boolean
@@ -91,14 +109,11 @@ export class Repository {
     ]
 
     const session = this.driver.session()
-    const transaction = session.beginTransaction()
 
     try {
-      const baselineExistsResult = await transaction.run(queries[0].statement, queries[0].parameters)
-      const latestMigrationResult = await transaction.run(queries[1].statement)
-      const migrationsResult = await transaction.run(queries[2].statement)
-
-      await transaction.commit()
+      const baselineExistsResult = await session.run(queries[0].statement, queries[0].parameters)
+      const latestMigrationResult = await session.run(queries[1].statement)
+      const migrationsResult = await session.run(queries[2].statement)
 
       return {
         appliedMigrations: migrationsResult.records.map((record) => ({
@@ -108,9 +123,6 @@ export class Repository {
         baselineExists: baselineExistsResult.records.length > 0,
         latestMigration: latestMigrationResult.records[0]?.get('m').properties || null,
       }
-    } catch (error) {
-      await transaction.rollback()
-      throw error
     } finally {
       await session.close()
     }

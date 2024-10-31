@@ -2,7 +2,7 @@ import {ensureDirSync, existsSync, writeJSONSync} from 'fs-extra'
 import path from 'node:path'
 
 import {DEFAULT_MIGRATIONS_PATH} from '../constants'
-import {Neo4jConfig, Neo4jScheme} from '../types'
+import {Neo4jConfig, Neo4jScheme, TransactionMode} from '../types'
 
 export type InitOptions = {
   configFile: string
@@ -32,6 +32,7 @@ export class InitService {
       password: 'neo4j',
       port: 7687,
       scheme: Neo4jScheme.NEO4J,
+      transactionMode: TransactionMode.PER_MIGRATION,
       username: 'neo4j',
     }
 

@@ -84,7 +84,7 @@ $ npm install -g morpheus4j
 $ morpheus COMMAND
 running command...
 $ morpheus (--version)
-morpheus4j/4.1.0 linux-x64 node-v20.13.1
+morpheus4j/4.1.0 linux-x64 node-v20.16.0
 $ morpheus --help [COMMAND]
 USAGE
   $ morpheus COMMAND
@@ -177,7 +177,7 @@ Generate a new timestamped migration file with boilerplate code
 
 ```
 USAGE
-  $ morpheus create NAME [-c <value>] [-m <value>]
+  $ morpheus create NAME [--json] [-c <value>] [-m <value>]
 
 ARGUMENTS
   NAME  Name of the migration (will be prefixed with a semver number)
@@ -185,6 +185,9 @@ ARGUMENTS
 FLAGS
   -c, --configFile=<value>      Path to the morpheus file. ./morpheus.json by default
   -m, --migrationsPath=<value>  Migrations path. Env: 'MORPHEUS_MIGRATIONS_PATH'
+
+GLOBAL FLAGS
+  --json  Format output as json.
 
 DESCRIPTION
   Generate a new timestamped migration file with boilerplate code
@@ -270,18 +273,20 @@ Execute pending database migrations in sequential order
 ```
 USAGE
   $ morpheus migrate [--json] [--debug] [-c <value>] [-m <value>] [-h <value>] [-p <value>] [-s <value>] [-P
-    <value>] [-u <value>] [-d <value>] [--dry-run]
+    <value>] [-u <value>] [-d <value>] [--dry-run] [--transaction-mode PER_MIGRATION|PER_STATEMENT]
 
 FLAGS
-  -P, --password=<value>        Neo4j password. Env: 'MORPHEUS_PASSWORD'
-  -c, --configFile=<value>      Path to the morpheus file. ./morpheus.json by default
-  -d, --database=<value>        Neo4j database. Env: 'MORPHEUS_DATABASE'
-  -h, --host=<value>            Neo4j host. Env: 'MORPHEUS_HOST'
-  -m, --migrationsPath=<value>  Migrations path. Env: 'MORPHEUS_MIGRATIONS_PATH'
-  -p, --port=<value>            Neo4j port. Env: 'MORPHEUS_PORT'
-  -s, --scheme=<value>          Neo4j scheme. Env: 'MORPHEUS_SCHEME'
-  -u, --username=<value>        Neo4j username. Env: 'MORPHEUS_USERNAME'
-      --dry-run                 Perform a dry run - no changes will be made to the database
+  -P, --password=<value>           Neo4j password. Env: 'MORPHEUS_PASSWORD'
+  -c, --configFile=<value>         Path to the morpheus file. ./morpheus.json by default
+  -d, --database=<value>           Neo4j database. Env: 'MORPHEUS_DATABASE'
+  -h, --host=<value>               Neo4j host. Env: 'MORPHEUS_HOST'
+  -m, --migrationsPath=<value>     Migrations path. Env: 'MORPHEUS_MIGRATIONS_PATH'
+  -p, --port=<value>               Neo4j port. Env: 'MORPHEUS_PORT'
+  -s, --scheme=<value>             Neo4j scheme. Env: 'MORPHEUS_SCHEME'
+  -u, --username=<value>           Neo4j username. Env: 'MORPHEUS_USERNAME'
+      --dry-run                    Perform a dry run - no changes will be made to the database
+      --transaction-mode=<option>  [default: PER_MIGRATION] Transaction mode
+                                   <options: PER_MIGRATION|PER_STATEMENT>
 
 GLOBAL FLAGS
   --debug  Enable debug logging
@@ -296,6 +301,10 @@ EXAMPLES
   $ morpheus migrate -m ~/path/to/migrations
 
   $ morpheus migrate --config ./custom-config.json
+
+  $ morpheus migrate --dry-run
+
+  $ morpheus migrate --transaction-mode=PER_STATEMENT
 ```
 
 _See code: [src/commands/migrate.ts](https://github.com/marianozunino/morpheus/blob/v4.1.0/src/commands/migrate.ts)_

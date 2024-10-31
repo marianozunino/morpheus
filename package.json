@@ -31,24 +31,26 @@
     "@nestjs/testing": "^10.0.0",
     "@oclif/prettier-config": "^0.2.1",
     "@oclif/test": "^4.0.0",
-    "@types/chai": "^4.0.0",
+    "@types/chai": "4.3.20",
     "@types/fs-extra": "^11.0.4",
-    "@types/mocha": "^10.0.0",
+    "@types/mocha": "10.0.9",
     "@types/node": "^18.0.0",
+    "@types/sinon": "17.0.3",
     "c8": "10.1.2",
-    "chai": "^4.0.0",
+    "chai": "4.5.0",
     "chance": "^1.1.12",
     "eslint": "^8.0.0",
     "eslint-config-oclif": "^5.0.0",
     "eslint-config-oclif-typescript": "^3.0.0",
     "eslint-config-prettier": "^9.0.0",
     "husky": "9.1.6",
-    "mocha": "^10.0.0",
+    "mocha": "10.8.2",
     "nodemon": "^3.1.7",
     "oclif": "^4.0.0",
     "shx": "^0.3.3",
+    "sinon": "19.0.2",
     "testcontainers": "^10.13.2",
-    "ts-node": "^10.0.0",
+    "ts-node": "10.9.2",
     "typescript": "^5.0.0"
   },
   "engines": {
@@ -90,15 +92,16 @@
     "build": "shx rm -rf dist && tsc -b",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
-    "postpack": "shx rm -f oclif.manifest.json",
     "prepack": "npm run build && oclif manifest && oclif readme",
-    "test": "c8 mocha \"test/**/*.test.ts\"",
+    "test:cov": "c8 mocha",
+    "test": "echo noop",
+    "postpack": "shx rm -f oclif.manifest.json",
     "version": "oclif readme && git add README.md",
     "watch": "nodemon --watch src --ext ts --exec \"npm run build\"",
     "prepare": "husky"
   },
   "main": "dist/nestjs/index.js",
-  "types": "dist/nesjs/index.d.ts",
+  "types": "dist/nestjs/index.d.ts",
   "c8": {
     "include": [
       "src/**/*.ts"
@@ -114,7 +117,7 @@
       "text",
       "lcov"
     ],
-    "cache": false,
+    "cache": true,
     "all": true
   },
   "packageManager": "npm@10.8.3+sha512.d08425c8062f56d43bb8e84315864218af2492eb769e1f1ca40740f44e85bd148969382d651660363942e5909cb7ffcbef7ca0ae963ddc2c57a51243b4da8f56"

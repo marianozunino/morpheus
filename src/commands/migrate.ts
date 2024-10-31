@@ -5,6 +5,7 @@ import {getDatabaseConnection} from '../neo4j/connection'
 import {FileService} from '../services/file.service'
 import {MigrationService} from '../services/migrate.service'
 import {Repository} from '../services/neo4j.repository'
+import {TransactionMode} from '../types'
 
 export default class Migrate extends BaseCommand<typeof Migrate> {
   static override aliases = []
@@ -14,6 +15,8 @@ export default class Migrate extends BaseCommand<typeof Migrate> {
     '<%= config.bin %> migrate',
     '<%= config.bin %> migrate -m ~/path/to/migrations',
     '<%= config.bin %> migrate --config ./custom-config.json',
+    '<%= config.bin %> migrate --dry-run',
+    '<%= config.bin %> migrate --transaction-mode=PER_STATEMENT',
   ]
 
   static override flags = {
@@ -22,6 +25,11 @@ export default class Migrate extends BaseCommand<typeof Migrate> {
       default: false,
       description: 'Perform a dry run - no changes will be made to the database',
     }),
+    'transaction-mode': Flags.option({
+      default: TransactionMode.PER_MIGRATION,
+      description: 'Transaction mode',
+      options: [TransactionMode.PER_MIGRATION, TransactionMode.PER_STATEMENT],
+    })(),
   }
 
   public async run(): Promise<void> {
@@ -33,7 +41,10 @@ export default class Migrate extends BaseCommand<typeof Migrate> {
       const repository = new Repository(connection)
       const fileService = new FileService(config)
 
-      await new MigrationService(repository, fileService).migrate(flags['dry-run'])
+      await new MigrationService(repository, fileService).migrate({
+        dryRun: flags['dry-run'],
+        transactionMode: flags['transaction-mode'],
+      })
       await connection.close()
     } catch (error) {
       this.error(error instanceof Error ? error.message : String(error))

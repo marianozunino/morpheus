@@ -2,7 +2,7 @@
 
 import {BASELINE} from '../constants'
 import {MigrationError} from '../errors'
-import {MigrationInfo, Neo4jMigrationNode} from '../types'
+import {MigrationInfo, MigrationOptions, Neo4jMigrationNode, TransactionMode} from '../types'
 import {FileService} from './file.service'
 import {Logger} from './logger'
 import {Repository} from './neo4j.repository'
@@ -16,7 +16,9 @@ export class MigrationService {
     private readonly fileService: FileService,
   ) {}
 
-  async migrate(dryRun = false): Promise<void> {
+  async migrate(options: Partial<MigrationOptions>): Promise<void>
+  async migrate(): Promise<void>
+  async migrate(options?: Partial<MigrationOptions>): Promise<void> {
     try {
       let state = await this.repository.getMigrationState()
 
@@ -30,18 +32,24 @@ export class MigrationService {
       await this.validateMigrations(state.appliedMigrations)
 
       const pendingMigrations = await this.getPendingMigrations()
+
       if (pendingMigrations.length === 0) {
         Logger.info('Database is up to date')
         return
       }
 
-      await (dryRun ? this.previewMigrations(pendingMigrations) : this.applyMigrations(pendingMigrations))
+      await (options?.dryRun
+        ? this.previewMigrations(pendingMigrations)
+        : this.applyMigrations(pendingMigrations, options?.transactionMode))
     } catch (error) {
       throw new MigrationError(`Migration failed: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
-  private async applyMigrations(fileNames: string[]): Promise<void> {
+  private async applyMigrations(
+    fileNames: string[],
+    transactionMode: TransactionMode = TransactionMode.PER_MIGRATION,
+  ): Promise<void> {
     for (const fileName of fileNames) {
       const migration = await this.fileService.prepareMigration(fileName)
       Logger.info(`Executing migration: ${fileName}`)
@@ -49,7 +57,13 @@ export class MigrationService {
       const startTime = Date.now()
 
       // Use the new executeQueries method
-      await this.repository.executeQueries(migration.statements.map((statement) => ({statement})))
+      if (transactionMode === TransactionMode.PER_STATEMENT) {
+        for (const statement of migration.statements) {
+          await this.repository.executeQuery({statement})
+        }
+      } else {
+        await this.repository.executeQueries(migration.statements.map((statement) => ({statement})))
+      }
 
       const duration = Date.now() - startTime
 
