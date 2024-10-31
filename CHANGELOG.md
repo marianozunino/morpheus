@@ -1,3 +1,10 @@
+# [4.2.0](https://github.com/marianozunino/morpheus/compare/v4.1.0...v4.2.0) (2024-10-31)
+
+
+### Features
+
+* **migrate:** add transaction-mode flag for improved migration control ([07ee812](https://github.com/marianozunino/morpheus/commit/07ee812f4944ba9439b8e4fbe028b5b2585f7b63))
+
 # [4.1.0](https://github.com/marianozunino/morpheus/compare/v4.0.0...v4.1.0) (2024-10-28)
 
 
