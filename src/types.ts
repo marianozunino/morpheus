@@ -1,6 +1,8 @@
 import {DateTime, Duration} from 'neo4j-driver'
 import {z} from 'zod'
 
+import {DEFAULT_MIGRATIONS_PATH} from './constants'
+
 export enum Neo4jScheme {
   BOLT = 'bolt',
   BOLT_SECURE = 'bolt+s',
@@ -24,7 +26,7 @@ export enum TransactionMode {
 export const Neo4jConfigSchema = z.object({
   database: z.string().optional(),
   host: z.string().min(1),
-  migrationsPath: z.string().optional(),
+  migrationsPath: z.string().default(DEFAULT_MIGRATIONS_PATH).optional(),
   password: z.string().min(1),
   port: z.number().int().positive(),
   scheme: z.nativeEnum(Neo4jScheme),

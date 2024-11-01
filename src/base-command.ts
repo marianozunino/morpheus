@@ -1,7 +1,5 @@
 import {Command, Flags, Interfaces} from '@oclif/core'
-import path from 'node:path'
 
-import {DEFAULT_MIGRATIONS_PATH, MORPHEUS_FILE_NAME} from './constants'
 import {ConfigService} from './services/config.service'
 import {Logger} from './services/logger'
 import {AuthFlags, ConfigFlags, ConnectionFlags, DatabaseFlags} from './shared-flags'
@@ -42,26 +40,23 @@ export abstract class BaseCommand<T extends typeof Command> extends Command {
   }
 
   protected getConfig(): Neo4jConfig {
-    const configFile = this.getConfigFile()
-
     const config = ConfigService.load(
       {
         database: this.flags.database,
         host: this.flags.host,
-        migrationsPath: this.flags.migrationsPath ?? DEFAULT_MIGRATIONS_PATH,
+        migrationsPath: this.flags.migrationsPath,
         password: this.flags.password,
         port: this.flags.port,
         scheme: this.flags.scheme,
         username: this.flags.username,
       },
-      configFile,
+      this.getConfigFile(),
     )
     return config
   }
 
   protected getConfigFile(): string {
-    const configFile = this.flags.configFile ?? path.join(process.cwd(), MORPHEUS_FILE_NAME)
-    return configFile
+    return this.flags.configFile
   }
 
   public async init(): Promise<void> {
