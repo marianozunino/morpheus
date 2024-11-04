@@ -18,7 +18,8 @@ export default class Init extends Command {
   static override flags = {
     configFile: Flags.string({
       char: 'c',
-      description: 'Path to the morpheus file. ./morpheus.json by default',
+      default: path.join(process.cwd(), MORPHEUS_FILE_NAME),
+      description: 'Path to the morpheus file (CWD/morpheus.json by default)',
     }),
     force: Flags.boolean({
       char: 'f',
@@ -35,14 +36,13 @@ export default class Init extends Command {
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(Init)
-    const configFile = this.getConfigFile(flags.configFile)
 
     try {
       new InitService({
-        configFile,
+        configFile: flags.configFile,
         force: flags.force,
       }).createMorpheusFile()
-      Logger.info(`Configuration file created successfully: ${configFile}`)
+      Logger.info(`Configuration file created successfully: ${flags.configFile}`)
     } catch (error) {
       Logger.error((error as Error).message)
     }

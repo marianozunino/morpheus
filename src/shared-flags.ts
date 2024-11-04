@@ -1,12 +1,14 @@
 import * as core from '@oclif/core'
+import path from 'node:path'
 
-import {EnvKeys} from './constants'
+import {DEFAULT_MIGRATIONS_PATH, EnvKeys, MORPHEUS_FILE_NAME} from './constants'
 
 // Method 1: Sort alphabetically
 const baseFlags: core.Interfaces.FlagInput = {
   configFile: core.Flags.string({
     char: 'c',
-    description: 'Path to the morpheus file. ./morpheus.json by default',
+    default: path.join(process.cwd(), MORPHEUS_FILE_NAME),
+    description: 'Path to the morpheus file (CWD/morpheus.json by default)',
   }),
   database: core.Flags.string({
     char: 'd',
@@ -20,6 +22,7 @@ const baseFlags: core.Interfaces.FlagInput = {
   }),
   migrationsPath: core.Flags.string({
     char: 'm',
+    default: DEFAULT_MIGRATIONS_PATH,
     description: `Migrations path. Env: '${EnvKeys.MIGRATIONS_PATH}'`,
     env: EnvKeys.MIGRATIONS_PATH,
     required: false,
