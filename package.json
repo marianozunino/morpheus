@@ -107,7 +107,6 @@
       "src/**/*.ts"
     ],
     "exclude": [
-      "data/import",
       "test/**/*.ts"
     ],
     "extension": [

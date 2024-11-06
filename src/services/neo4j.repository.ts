@@ -3,7 +3,7 @@
 import {Driver, RecordShape} from 'neo4j-driver'
 
 import {BASELINE, MIGRATION_LABEL} from '../constants'
-import {MigrationInfo, Neo4jMigrationNode} from '../types'
+import {MigrationInfo, Neo4jMigrationNode, Neo4jMigrationRelation} from '../types'
 import {Logger} from './logger'
 
 export class Repository {
@@ -41,6 +41,35 @@ export class Repository {
       {statement: `MATCH (b:${MIGRATION_LABEL}) DETACH DELETE b`},
     ]
     await this.executeQueries(dataQueries)
+  }
+
+  async createMigrationRelation(fromVersion: string, toVersion: string): Promise<void> {
+    const queries = [
+      {
+        parameters: {fromVersion, toVersion},
+        statement: `
+          MATCH (prev:${MIGRATION_LABEL} {version: $fromVersion})
+          MATCH (next:${MIGRATION_LABEL} {version: $toVersion})
+          MERGE (prev)-[r:MIGRATED_TO]->(next)
+          SET r.at = datetime({timezone: 'UTC'})
+          SET r.in = duration({ months: 0, days: 0, seconds: 0, nanoseconds: 0 })
+        `,
+      },
+    ]
+    await this.executeQueries(queries)
+  }
+
+  async deleteMigration(version: string): Promise<void> {
+    const queries = [
+      {
+        parameters: {version},
+        statement: `
+          MATCH (m:${MIGRATION_LABEL} {version: $version})
+          DETACH DELETE m
+        `,
+      },
+    ]
+    await this.executeQueries(queries)
   }
 
   async executeQueries(queries: Array<{parameters?: RecordShape; statement: string}>): Promise<void> {
@@ -83,6 +112,35 @@ export class Repository {
     }
   }
 
+  async getMigrationInfo(version: string): Promise<MigrationInfo | null> {
+    const session = this.driver.session()
+    try {
+      const result = await session.run(
+        `
+        MATCH (m:${MIGRATION_LABEL} {version: $version})
+        OPTIONAL MATCH (prev:${MIGRATION_LABEL})-[r:MIGRATED_TO]->(m)
+        RETURN m, r
+        `,
+        {version},
+      )
+
+      if (result.records.length === 0) {
+        return null
+      }
+
+      const record = result.records[0]
+      const node = record.get('m').properties as Neo4jMigrationNode
+      const relation = record.get('r')?.properties as Neo4jMigrationRelation
+
+      return {
+        node,
+        relation,
+      }
+    } finally {
+      await session.close()
+    }
+  }
+
   async getMigrationState(): Promise<{
     appliedMigrations: MigrationInfo[]
     baselineExists: boolean
@@ -101,9 +159,12 @@ export class Repository {
         `,
       },
       {
+        parameters: {baseline: BASELINE},
         statement: `
-          MATCH (${MIGRATION_LABEL})-[r:MIGRATED_TO]->(m:${MIGRATION_LABEL})
-          RETURN m, r ORDER BY m.version
+          MATCH p=(base:${MIGRATION_LABEL} {version: $baseline})-[:MIGRATED_TO*]->(m:${MIGRATION_LABEL})
+          WITH m, relationships(p) as rels
+          ORDER BY m.version
+          RETURN m, LAST(rels) as r
         `,
       },
     ]
@@ -112,13 +173,13 @@ export class Repository {
 
     try {
       const baselineExistsResult = await session.run(queries[0].statement, queries[0].parameters)
-      const latestMigrationResult = await session.run(queries[1].statement)
-      const migrationsResult = await session.run(queries[2].statement)
+      const latestMigrationResult = await session.run(queries[1].statement, queries[1].parameters)
+      const migrationsResult = await session.run(queries[2].statement, queries[2].parameters)
 
       return {
         appliedMigrations: migrationsResult.records.map((record) => ({
           node: record.get('m').properties,
-          relation: record.get('r').properties,
+          relation: record.get('r')?.properties || null,
         })),
         baselineExists: baselineExistsResult.records.length > 0,
         latestMigration: latestMigrationResult.records[0]?.get('m').properties || null,
@@ -150,5 +211,25 @@ export class Repository {
       },
     ]
     await this.executeQueries(schemaQueries)
+  }
+
+  async markAsLatestMigration(version: string): Promise<void> {
+    const queries = [
+      {
+        statement: `
+          MATCH (m:${MIGRATION_LABEL})
+          WHERE m.isLatest IS NOT NULL
+          REMOVE m.isLatest
+        `,
+      },
+      {
+        parameters: {version},
+        statement: `
+          MATCH (m:${MIGRATION_LABEL} {version: $version})
+          SET m.isLatest = true
+        `,
+      },
+    ]
+    await this.executeQueries(queries)
   }
 }
