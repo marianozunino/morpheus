@@ -84,7 +84,7 @@ $ npm install -g morpheus4j
 $ morpheus COMMAND
 running command...
 $ morpheus (--version)
-morpheus4j/4.2.0 linux-x64 node-v20.13.1
+morpheus4j/4.2.0 linux-x64 node-v22.14.0
 $ morpheus --help [COMMAND]
 USAGE
   $ morpheus COMMAND
@@ -142,10 +142,11 @@ USAGE
 
 FLAGS
   -P, --password=<value>        Neo4j password. Env: 'MORPHEUS_PASSWORD'
-  -c, --configFile=<value>      Path to the morpheus file. ./morpheus.json by default
+  -c, --configFile=<value>      [default: /home/runner/work/morpheus/morpheus/morpheus.json] Path to the morpheus file
+                                (CWD/morpheus.json by default)
   -d, --database=<value>        Neo4j database. Env: 'MORPHEUS_DATABASE'
   -h, --host=<value>            Neo4j host. Env: 'MORPHEUS_HOST'
-  -m, --migrationsPath=<value>  Migrations path. Env: 'MORPHEUS_MIGRATIONS_PATH'
+  -m, --migrationsPath=<value>  [default: neo4j/migrations] Migrations path. Env: 'MORPHEUS_MIGRATIONS_PATH'
   -p, --port=<value>            Neo4j port. Env: 'MORPHEUS_PORT'
   -s, --scheme=<value>          Neo4j scheme. Env: 'MORPHEUS_SCHEME'
   -u, --username=<value>        Neo4j username. Env: 'MORPHEUS_USERNAME'
@@ -183,8 +184,9 @@ ARGUMENTS
   NAME  Name of the migration (will be prefixed with a semver number)
 
 FLAGS
-  -c, --configFile=<value>      Path to the morpheus file. ./morpheus.json by default
-  -m, --migrationsPath=<value>  Migrations path. Env: 'MORPHEUS_MIGRATIONS_PATH'
+  -c, --configFile=<value>      [default: /home/runner/work/morpheus/morpheus/morpheus.json] Path to the morpheus file
+                                (CWD/morpheus.json by default)
+  -m, --migrationsPath=<value>  [default: neo4j/migrations] Migrations path. Env: 'MORPHEUS_MIGRATIONS_PATH'
 
 GLOBAL FLAGS
   --json  Format output as json.
@@ -213,10 +215,11 @@ USAGE
 
 FLAGS
   -P, --password=<value>        Neo4j password. Env: 'MORPHEUS_PASSWORD'
-  -c, --configFile=<value>      Path to the morpheus file. ./morpheus.json by default
+  -c, --configFile=<value>      [default: /home/runner/work/morpheus/morpheus/morpheus.json] Path to the morpheus file
+                                (CWD/morpheus.json by default)
   -d, --database=<value>        Neo4j database. Env: 'MORPHEUS_DATABASE'
   -h, --host=<value>            Neo4j host. Env: 'MORPHEUS_HOST'
-  -m, --migrationsPath=<value>  Migrations path. Env: 'MORPHEUS_MIGRATIONS_PATH'
+  -m, --migrationsPath=<value>  [default: neo4j/migrations] Migrations path. Env: 'MORPHEUS_MIGRATIONS_PATH'
   -p, --port=<value>            Neo4j port. Env: 'MORPHEUS_PORT'
   -s, --scheme=<value>          Neo4j scheme. Env: 'MORPHEUS_SCHEME'
   -u, --username=<value>        Neo4j username. Env: 'MORPHEUS_USERNAME'
@@ -248,7 +251,8 @@ USAGE
   $ morpheus init [-c <value>] [-f]
 
 FLAGS
-  -c, --configFile=<value>  Path to the morpheus file. ./morpheus.json by default
+  -c, --configFile=<value>  [default: /home/runner/work/morpheus/morpheus/morpheus.json] Path to the morpheus file
+                            (CWD/morpheus.json by default)
   -f, --force               Overwrite existing configuration file if it exists
 
 DESCRIPTION
@@ -277,10 +281,11 @@ USAGE
 
 FLAGS
   -P, --password=<value>           Neo4j password. Env: 'MORPHEUS_PASSWORD'
-  -c, --configFile=<value>         Path to the morpheus file. ./morpheus.json by default
+  -c, --configFile=<value>         [default: /home/runner/work/morpheus/morpheus/morpheus.json] Path to the morpheus
+                                   file (CWD/morpheus.json by default)
   -d, --database=<value>           Neo4j database. Env: 'MORPHEUS_DATABASE'
   -h, --host=<value>               Neo4j host. Env: 'MORPHEUS_HOST'
-  -m, --migrationsPath=<value>     Migrations path. Env: 'MORPHEUS_MIGRATIONS_PATH'
+  -m, --migrationsPath=<value>     [default: neo4j/migrations] Migrations path. Env: 'MORPHEUS_MIGRATIONS_PATH'
   -p, --port=<value>               Neo4j port. Env: 'MORPHEUS_PORT'
   -s, --scheme=<value>             Neo4j scheme. Env: 'MORPHEUS_SCHEME'
   -u, --username=<value>           Neo4j username. Env: 'MORPHEUS_USERNAME'
