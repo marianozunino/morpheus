@@ -14,18 +14,15 @@ describe('Morpheus API (e2e)', () => {
   const migrationsDir = path.join(configDir, 'migrations')
 
   before(async () => {
-    // Set up the Neo4j test container
     container = new Neo4jTestContainer()
     await container.start()
 
-    // Clean up config and migrations directories if they exist
     if (existsSync(configDir)) {
       rmSync(configDir, {force: true, recursive: true})
     }
   })
 
   after(async () => {
-    // Stop the Neo4j container and clean up files
     await container.stop()
     if (existsSync(configDir)) {
       rmSync(configDir, {force: true, recursive: true})

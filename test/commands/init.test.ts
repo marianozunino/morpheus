@@ -3,72 +3,96 @@ import {expect} from 'chai'
 import * as fs from 'fs-extra'
 import * as path from 'node:path'
 import {MORPHEUS_FILE_NAME} from '../../src/constants'
-import {tmpdir} from 'os'
-import {Logger} from '../../src/services/logger'
+import {getTempDir, cleanDirectory, setupTestEnvironment} from '../utils/test-helpers'
 
-describe('init', () => {
-  let configDir = path.join(tmpdir(), 'morpheus')
+describe('init command', () => {
+  let configDir: string
   let commandResult: Awaited<ReturnType<typeof runCommand>>
 
-  beforeEach(() => {
-    Logger.initialize() // Reset logger
+  before(() => {
+    configDir = getTempDir()
+    cleanDirectory(configDir)
   })
 
-  before(async () => {
+  beforeEach(() => {
+    setupTestEnvironment()
+  })
+
+  afterEach(function () {
+    if (this.currentTest?.state === 'failed' && commandResult) {
+      console.log('Failed test output:', commandResult)
+    }
+  })
+
+  after(() => {
     if (fs.existsSync(configDir)) {
       fs.rmSync(configDir, {recursive: true, force: true})
     }
   })
 
-  afterEach(function () {
-    if (this.currentTest?.state === 'failed' && commandResult) {
-      console.log(commandResult)
+  it('creates a new configuration file successfully', async () => {
+    const configPath = path.join(configDir, 'morpheus-test.json')
+
+    commandResult = await runCommand(['init', '-c', configPath])
+
+    expect(commandResult.stdout).to.contain('Configuration file created successfully')
+
+    expect(fs.existsSync(configPath)).to.be.true
+
+    const config = fs.readJsonSync(configPath)
+    expect(config).to.have.property('host', 'localhost')
+    expect(config).to.have.property('port', 7687)
+    expect(config).to.have.property('username', 'neo4j')
+  })
+
+  it('fails when attempting to overwrite without force flag', async () => {
+    const configPath = path.join(configDir, 'exists.json')
+
+    fs.writeJsonSync(configPath, {test: 'data'})
+
+    commandResult = await runCommand(['init', '-c', configPath])
+
+    expect(commandResult.stderr).to.contain('already exists')
+
+    const content = fs.readJsonSync(configPath)
+    expect(content).to.deep.equal({test: 'data'})
+  })
+
+  it('overwrites existing file when using force flag', async () => {
+    const configPath = path.join(configDir, 'force-overwrite.json')
+
+    fs.writeJsonSync(configPath, {test: 'original'})
+
+    commandResult = await runCommand(['init', '-c', configPath, '--force'])
+
+    expect(commandResult.stdout).to.contain('Configuration file created successfully')
+
+    const content = fs.readJsonSync(configPath)
+    expect(content).to.have.property('username', 'neo4j')
+    expect(content).to.not.have.property('test')
+  })
+
+  it('creates default file in current directory when no path specified', async () => {
+    const defaultPath = path.join(process.cwd(), MORPHEUS_FILE_NAME)
+    let backupData
+
+    if (fs.existsSync(defaultPath)) {
+      backupData = fs.readJsonSync(defaultPath)
+      fs.removeSync(defaultPath)
     }
-  })
 
-  it('runs init command successfully', async () => {
-    const result = await runCommand(`init -c ${configDir}/config.json`)
-    commandResult = result
-    const stdout = result.stdout
-    expect(stdout).to.contain('Configuration file created ')
-  })
+    try {
+      commandResult = await runCommand(['init'])
 
-  it('overwrites morpheus file when force flag is used', async () => {
-    const filePath = path.join(configDir, MORPHEUS_FILE_NAME)
-    fs.ensureDirSync(path.dirname(filePath))
-    fs.writeFileSync(filePath, 'existing content')
+      expect(commandResult.stdout).to.contain('Configuration file created successfully')
 
-    const result = await runCommand(['init', '--force', '-c', filePath])
-    commandResult = result
-    const stdout = result.stdout
-
-    expect(stdout).to.contain(`Configuration file created successfully: ${filePath}`)
-    const fileContent = fs.readFileSync(filePath, 'utf-8')
-    expect(fileContent).to.not.equal('existing content')
-  })
-
-  it('created a morpheus file in the current directory if no -c flag is used', async () => {
-    // delete possibly existing morpheus file
-    fs.removeSync(path.join(process.cwd(), MORPHEUS_FILE_NAME))
-    const result = await runCommand(['init'])
-    commandResult = result
-    const stdout = result.stdout
-    expect(stdout).to.contain('Configuration file created ')
-    expect(fs.existsSync(path.join(process.cwd(), MORPHEUS_FILE_NAME))).to.be.true
-  })
-
-  it('fails to create morpheus file if it exists and force is not used', async () => {
-    const filePath = path.join(configDir, MORPHEUS_FILE_NAME)
-    fs.ensureDirSync(path.dirname(filePath))
-    fs.writeFileSync(filePath, 'existing content')
-
-    const result = await runCommand(['init', '-c', filePath])
-
-    commandResult = result
-    const stderr = result.stderr
-
-    expect(stderr).to.contain('already exists')
-    const fileContent = fs.readFileSync(filePath, 'utf-8')
-    expect(fileContent).to.equal('existing content')
+      expect(fs.existsSync(defaultPath)).to.be.true
+    } finally {
+      if (backupData) {
+        fs.writeJsonSync(defaultPath, backupData)
+      } else if (fs.existsSync(defaultPath)) {
+        fs.removeSync(defaultPath)
+      }
+    }
   })
 })

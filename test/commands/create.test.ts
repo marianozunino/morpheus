@@ -2,101 +2,129 @@ import {runCommand} from '@oclif/test'
 import {expect} from 'chai'
 import * as fs from 'fs-extra'
 import * as path from 'node:path'
-import {tmpdir} from 'os'
-import {Logger} from '../../src/services/logger'
+import {
+  getTempDir,
+  cleanDirectory,
+  setupTestEnvironment,
+  initTestConfig,
+  getMigrationPathFromOutput,
+} from '../utils/test-helpers'
 
-const chance = require('chance').Chance()
-
-describe('create', () => {
-  let configDir = path.join(tmpdir(), 'morpheus')
-  let migrationsDir = path.join(configDir, 'migrations')
+describe('create command', () => {
+  let configDir: string
+  let configFile: string
   let commandResult: Awaited<ReturnType<typeof runCommand>>
+  const originalEnv = {...process.env}
 
-  beforeEach(() => {
-    Logger.initialize(false, false) // Reset logger
+  before(() => {
+    configDir = getTempDir()
+    configFile = path.join(configDir, 'config.json')
+
+    cleanDirectory(configDir)
   })
 
-  before(async () => {
-    if (fs.existsSync(configDir)) {
-      fs.rmSync(configDir, {recursive: true, force: true})
-    }
-  })
-
-  after(async () => {
-    if (fs.existsSync(configDir)) {
-      fs.rmSync(configDir, {recursive: true, force: true})
-    }
+  beforeEach(async () => {
+    setupTestEnvironment()
+    await initTestConfig(configFile)
   })
 
   afterEach(function () {
+    process.env = {...originalEnv}
+
     if (this.currentTest?.state === 'failed' && commandResult) {
-      console.log(commandResult)
+      console.log('Failed test output:', commandResult)
     }
   })
 
-  it('creates a new migration file successfully', async () => {
-    const confFile = `${configDir}/config.json`
-    await runCommand(`init -c ${confFile}`)
-
-    const result = await runCommand(['create', 'create_test_migration', '-c', confFile])
-    commandResult = result
-    const stdout = result.stdout
-
-    // Verify command output
-    expect(stdout).to.contain('Migration file created')
-
-    // Check if the migration file was created
-    const createdFile = stdout.split('Migration file created: ')[1].trim()
-    expect(fs.existsSync(createdFile)).to.be.true
-
-    // Ensure migration file content is valid
-    const fileContent = fs.readFileSync(createdFile, 'utf-8')
-    expect(fileContent).to.contain('CREATE (agent:`007`) RETURN agent;')
+  after(() => {
+    if (fs.existsSync(configDir)) {
+      fs.rmSync(configDir, {recursive: true, force: true})
+    }
   })
 
-  it('creates migration file with custom config file', async () => {
-    const confFile = `${configDir}/config.json`
-    await runCommand(`init -c ${confFile}`)
+  it('creates a new migration file with valid content', async () => {
+    const migrationName = 'test-migration-file'
 
-    const result = await runCommand(['create', 'custom_test_migration', '-c', confFile])
+    commandResult = await runCommand(['create', migrationName, '-c', configFile])
 
-    commandResult = result
-    const stdout = result.stdout
+    expect(commandResult.stdout).to.contain('Migration file created:')
 
-    const createdFile = stdout.split('Migration file created: ')[1].trim()
+    const createdFile = getMigrationPathFromOutput(commandResult.stdout)
+
     expect(fs.existsSync(createdFile)).to.be.true
 
-    // Verify command output
-    expect(stdout).to.contain('Migration file created')
+    const content = fs.readFileSync(createdFile, 'utf-8')
+    expect(content).to.contain('CREATE (agent:`007`) RETURN agent;')
+
+    const filename = path.basename(createdFile)
+    expect(filename).to.match(/^V\d+_\d+_\d+__test-migration-file\.cypher$/)
   })
 
-  it('changes migrations directory using the -m flag', async () => {
-    const confFile = `${configDir}/config.json`
-    await runCommand(`init -c ${confFile}`)
+  it('creates migration in custom directory using -m flag', async () => {
+    const customDir = path.join(configDir, 'custom-migrations')
+    const migrationName = 'custom-dir-migration'
 
-    const result = await runCommand(['create', 'custom_test_migration', '-c', confFile, '-m', migrationsDir])
-    commandResult = result
-    const stdout = result.stdout
+    commandResult = await runCommand(['create', migrationName, '-c', configFile, '-m', customDir])
 
-    const createdFile = stdout.split('Migration file created: ')[1].trim()
+    expect(commandResult.stdout).to.contain('Migration file created:')
+    expect(commandResult.stdout).to.contain(customDir)
+
+    const createdFile = getMigrationPathFromOutput(commandResult.stdout)
+
     expect(fs.existsSync(createdFile)).to.be.true
-    expect(stdout).to.contain(migrationsDir)
+
+    expect(path.dirname(createdFile)).to.equal(customDir)
   })
 
-  it('changes migrations directory using the env var MORPHEUS_MIGRATIONS_PATH', async () => {
-    const confFile = `${configDir}/config.json`
-    await runCommand(`init -c ${confFile}`)
+  it('supports environment variable for migrations path', async () => {
+    const envMigrationsDir = path.join(configDir, 'env-migrations')
+    const migrationName = 'env-var-migration'
 
-    const randomDir = `${migrationsDir}/${chance.word({length: 10})}`
+    process.env.MORPHEUS_MIGRATIONS_PATH = envMigrationsDir
 
-    process.env.MORPHEUS_MIGRATIONS_PATH = randomDir
-    const result = await runCommand(['create', 'custom_test_migration', '-c', confFile])
-    commandResult = result
-    const stdout = result.stdout
-    process.env.MORPHEUS_MIGRATIONS_PATH = undefined
+    commandResult = await runCommand(['create', migrationName, '-c', configFile])
 
-    const createdFile = stdout.split('Migration file created: ')[1].trim()
+    expect(commandResult.stdout).to.contain('Migration file created:')
+    expect(commandResult.stdout).to.contain(envMigrationsDir)
+
+    const createdFile = getMigrationPathFromOutput(commandResult.stdout)
+
     expect(fs.existsSync(createdFile)).to.be.true
-    expect(stdout).to.contain(randomDir)
+
+    expect(path.dirname(createdFile)).to.equal(envMigrationsDir)
+  })
+
+  it('creates migrations with incrementing version numbers', async () => {
+    const testMigrationsDir = path.join(configDir, 'sequence-test-migrations')
+    fs.ensureDirSync(testMigrationsDir)
+
+    const migrationNames = ['first-migration', 'second-migration', 'third-migration']
+    const createdFiles: string[] = []
+
+    for (const name of migrationNames) {
+      commandResult = await runCommand(['create', name, '-c', configFile, '-m', testMigrationsDir])
+      createdFiles.push(getMigrationPathFromOutput(commandResult.stdout))
+    }
+
+    const versions = createdFiles.map((file) => {
+      const match = path.basename(file).match(/^V(\d+)_(\d+)_(\d+)__/)
+      return match ? parseInt(match[1]) : null
+    })
+
+    expect(versions[0]).to.equal(1)
+    expect(versions[1]).to.equal(2)
+    expect(versions[2]).to.equal(3)
+  })
+
+  it('it fails with invalid characters in migration names', async () => {
+    const invalidName = 'test/invalidnamewithchars'
+
+    commandResult = await runCommand(['create', invalidName, '-c', configFile])
+    expect(commandResult.error?.message).to.contain('Migration file name contains invalid characters')
+  })
+
+  it('fails with appropriate error for empty migration name', async () => {
+    commandResult = await runCommand(['create', '', '-c', configFile])
+    expect(commandResult.error?.message).to.contain('Missing 1 required arg')
   })
 })
