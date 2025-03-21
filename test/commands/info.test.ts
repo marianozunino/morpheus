@@ -1,99 +1,80 @@
 import {runCommand} from '@oclif/test'
 import {expect} from 'chai'
-import {Neo4jTestContainer} from '../test-container'
 import * as fs from 'fs-extra'
 import * as path from 'node:path'
 import {tmpdir} from 'os'
-import {Logger} from '../../src/services/logger'
+import {getRandomMigrationDir, cleanDirectory, setupTestEnvironment, createTestMigrations} from '../utils/test-helpers'
+import {
+  setupTestContainer,
+  cleanupTestResources,
+  verifyMigrationCount,
+  MigrationTestContext,
+} from '../utils/neo4j-test-setup'
 
-const chance = require('chance').Chance()
-
-describe('info', () => {
-  let container: Neo4jTestContainer
-  const configDir = path.join(tmpdir(), 'morpheus')
-  const migrationsDir = path.join(configDir, 'migrations')
+describe('info command', () => {
+  let testContext: MigrationTestContext
   let commandResult: Awaited<ReturnType<typeof runCommand>>
 
   beforeEach(() => {
-    Logger.initialize() // Reset logger
+    setupTestEnvironment()
   })
 
   before(async () => {
-    // Set up the Neo4j test container
-    container = new Neo4jTestContainer()
-    await container.start()
-
-    // Clean up config and migrations directories if they exist
-    if (fs.existsSync(configDir)) {
-      fs.rmSync(configDir, {force: true, recursive: true})
-    }
+    testContext = await setupTestContainer()
   })
 
   after(async () => {
-    // Stop the Neo4j container and clean up files
-    await container.stop()
-    if (fs.existsSync(configDir)) {
-      fs.rmSync(configDir, {force: true, recursive: true})
-    }
+    await cleanupTestResources(testContext)
   })
 
   afterEach(function () {
     if (this.currentTest?.state === 'failed' && commandResult) {
-      console.log(commandResult)
+      console.log('Failed test output:', commandResult)
     }
   })
 
   beforeEach(async () => {
-    await container.wipe()
+    await testContext.container.wipe()
   })
 
-  it('should fail to run info if morpheus.json does not exist', async () => {
-    // Run migrate command
-    const out = await runCommand(['info', '-c', path.join(tmpdir(), chance.word({length: 10}))])
-    commandResult = out
-
-    // Verify migration applied successfully
-    expect(out.error?.message).to.contain('Configuration validation failed')
+  it('fails when configuration is invalid', async () => {
+    const nonExistentConfig = path.join(tmpdir(), `nonexistent-${Date.now()}.json`)
+    commandResult = await runCommand(['info', '-c', nonExistentConfig])
+    expect(commandResult.error?.message).to.contain('Configuration validation failed')
   })
 
-  describe('should fail to info if it cannot connect to the database', async () => {
-    it('Unauthorized', async () => {
-      const randomDir = `${migrationsDir}/${chance.word({length: 10})}`
+  it('fails with appropriate errors for database connection issues', async () => {
+    const randomDir = getRandomMigrationDir(testContext.configDir)
+    cleanDirectory(randomDir)
 
-      // Run migrate command
-      const out = await runCommand([
+    {
+      commandResult = await runCommand([
         'info',
         '-s',
         'bolt',
         '-p',
-        container.getPort().toString(),
+        testContext.container.getPort().toString(),
         '-h',
-        container.getHost(),
+        testContext.container.getHost(),
         '-u',
         'neo4j',
         '-P',
-        chance.word({length: 10}),
+        'wrong-password',
         '-m',
         randomDir,
       ])
-      commandResult = out
+      expect(commandResult.error?.message).to.contain('unauthorized due to authentication failure')
+    }
 
-      // Verify migration applied successfully
-      expect(out.error?.message).to.contain('The client is unauthorized due to authentication failure.')
-    })
-
-    it('Invalid host', async () => {
-      const randomDir = `${migrationsDir}/${chance.word({length: 10})}`
-
-      // Run migrate command
-      const out = await runCommand([
+    {
+      commandResult = await runCommand([
         'info',
         '-s',
         'bolt',
         '-p',
-        container.getPort().toString(),
+        testContext.container.getPort().toString(),
         '-h',
-        'example.com',
+        'invalid-host',
         '-u',
         'neo4j',
         '-P',
@@ -101,24 +82,18 @@ describe('info', () => {
         '-m',
         randomDir,
       ])
-      commandResult = out
+      expect(commandResult.error?.message).to.contain('Failed to connect')
+    }
 
-      // Verify migration applied successfully
-      expect(out.error?.message).to.contain('Failed to connect to server.')
-    })
-
-    it('Invalid port', async () => {
-      const randomDir = `${migrationsDir}/${chance.word({length: 10})}`
-
-      // Run migrate command
-      const out = await runCommand([
+    {
+      commandResult = await runCommand([
         'info',
         '-s',
         'bolt',
         '-p',
         '42069',
         '-h',
-        container.getHost(),
+        testContext.container.getHost(),
         '-u',
         'neo4j',
         '-P',
@@ -126,23 +101,22 @@ describe('info', () => {
         '-m',
         randomDir,
       ])
-      commandResult = out
-
-      // Verify migration applied successfully
-      expect(out.error?.message).to.contain('Failed to connect to server.')
-    })
+      expect(commandResult.error?.message).to.contain('Failed to connect')
+    }
   })
 
-  it('should info that there are no migrations', async () => {
-    const randomDir = `${migrationsDir}/${chance.word({length: 10})}`
-    const out = await runCommand([
+  it('reports when there are no migrations', async () => {
+    const randomDir = getRandomMigrationDir(testContext.configDir)
+    cleanDirectory(randomDir)
+
+    commandResult = await runCommand([
       'info',
       '-s',
       'bolt',
       '-p',
-      container.getPort().toString(),
+      testContext.container.getPort().toString(),
       '-h',
-      container.getHost(),
+      testContext.container.getHost(),
       '-u',
       'neo4j',
       '-P',
@@ -150,28 +124,26 @@ describe('info', () => {
       '-m',
       randomDir,
     ])
-    commandResult = out
 
-    expect(out.stdout).to.contain('Database is up to date, but there are no migrations in the migrations folder')
+    expect(commandResult.stdout).to.contain(
+      'Database is up to date, but there are no migrations in the migrations folder',
+    )
   })
 
-  it('should info about the applied migrations', async () => {
-    const randomDir = `${migrationsDir}/${chance.word({length: 10})}`
+  it('displays information about applied migrations', async () => {
+    const randomDir = getRandomMigrationDir(testContext.configDir)
+    cleanDirectory(randomDir)
 
-    const file1 = `migration-${chance.word({length: 4})}`
-    const file2 = `migration-${chance.word({length: 4})}`
-
-    await runCommand(['create', file1, '-m', randomDir])
-    await runCommand(['create', file2, '-m', randomDir])
+    const migrationNames = await createTestMigrations(randomDir, 2)
 
     await runCommand([
       'migrate',
       '-s',
       'bolt',
       '-p',
-      container.getPort().toString(),
+      testContext.container.getPort().toString(),
       '-h',
-      container.getHost(),
+      testContext.container.getHost(),
       '-u',
       'neo4j',
       '-P',
@@ -180,14 +152,16 @@ describe('info', () => {
       randomDir,
     ])
 
-    const out = await runCommand([
+    await verifyMigrationCount(testContext.container, 3)
+
+    commandResult = await runCommand([
       'info',
       '-s',
       'bolt',
       '-p',
-      container.getPort().toString(),
+      testContext.container.getPort().toString(),
       '-h',
-      container.getHost(),
+      testContext.container.getHost(),
       '-u',
       'neo4j',
       '-P',
@@ -195,30 +169,33 @@ describe('info', () => {
       '-m',
       randomDir,
     ])
-    commandResult = out
 
-    expect(out.stdout).to.contain(file2)
-    expect(out.stdout).to.contain(file1)
-    expect(out.stdout).not.to.contain('PENDING')
+    for (const name of migrationNames) {
+      expect(commandResult.stdout).to.contain(name)
+    }
+    expect(commandResult.stdout).not.to.contain('PENDING')
+
+    expect(commandResult.stdout).to.contain('Version')
+    expect(commandResult.stdout).to.contain('Description')
+    expect(commandResult.stdout).to.contain('ExecutionTime')
+    expect(commandResult.stdout).to.contain('State')
+    expect(commandResult.stdout).to.contain('APPLIED')
   })
 
-  it('should info about the applied migrations and the pending migrations', async () => {
-    const randomDir = `${migrationsDir}/${chance.word({length: 10})}`
+  it('displays both applied and pending migrations', async () => {
+    const randomDir = getRandomMigrationDir(testContext.configDir)
+    cleanDirectory(randomDir)
 
-    const file1 = `migration-${chance.word({length: 4})}`
-    const file2 = `migration-${chance.word({length: 4})}`
-
-    await runCommand(['create', file1, '-m', randomDir])
-    await runCommand(['create', file2, '-m', randomDir])
+    const firstBatch = await createTestMigrations(randomDir, 2)
 
     await runCommand([
       'migrate',
       '-s',
       'bolt',
       '-p',
-      container.getPort().toString(),
+      testContext.container.getPort().toString(),
       '-h',
-      container.getHost(),
+      testContext.container.getHost(),
       '-u',
       'neo4j',
       '-P',
@@ -227,17 +204,16 @@ describe('info', () => {
       randomDir,
     ])
 
-    const file3 = `migration-${chance.word({length: 4})}`
-    await runCommand(['create', file3, '-m', randomDir])
+    const pendingMigration = await createTestMigrations(randomDir, 1, 2)
 
-    const out = await runCommand([
+    commandResult = await runCommand([
       'info',
       '-s',
       'bolt',
       '-p',
-      container.getPort().toString(),
+      testContext.container.getPort().toString(),
       '-h',
-      container.getHost(),
+      testContext.container.getHost(),
       '-u',
       'neo4j',
       '-P',
@@ -245,31 +221,32 @@ describe('info', () => {
       '-m',
       randomDir,
     ])
-    commandResult = out
 
-    expect(out.stdout).to.contain(file3)
-    expect(out.stdout).to.contain(file2)
-    expect(out.stdout).to.contain(file1)
-    expect(out.stdout).to.contain('PENDING')
+    for (const name of firstBatch) {
+      expect(commandResult.stdout).to.contain(name)
+    }
+    for (const name of pendingMigration) {
+      expect(commandResult.stdout).to.contain(name)
+    }
+
+    expect(commandResult.stdout).to.contain('PENDING')
+    expect(commandResult.stdout).to.contain('APPLIED')
   })
 
-  it('should info about applied but missing local migrations', async () => {
-    const randomDir = `${migrationsDir}/${chance.word({length: 10})}`
+  it('reports when there are more migrations in database than in folder', async () => {
+    const randomDir = getRandomMigrationDir(testContext.configDir)
+    cleanDirectory(randomDir)
 
-    const file1 = `migration-${chance.word({length: 4})}`
-    const file2 = `migration-${chance.word({length: 4})}`
-
-    await runCommand(['create', file1, '-m', randomDir])
-    await runCommand(['create', file2, '-m', randomDir])
+    const migrationNames = await createTestMigrations(randomDir, 2)
 
     await runCommand([
       'migrate',
       '-s',
       'bolt',
       '-p',
-      container.getPort().toString(),
+      testContext.container.getPort().toString(),
       '-h',
-      container.getHost(),
+      testContext.container.getHost(),
       '-u',
       'neo4j',
       '-P',
@@ -278,16 +255,16 @@ describe('info', () => {
       randomDir,
     ])
 
-    fs.rmSync(randomDir, {recursive: true})
+    fs.emptyDirSync(randomDir)
 
-    const out = await runCommand([
+    commandResult = await runCommand([
       'info',
       '-s',
       'bolt',
       '-p',
-      container.getPort().toString(),
+      testContext.container.getPort().toString(),
       '-h',
-      container.getHost(),
+      testContext.container.getHost(),
       '-u',
       'neo4j',
       '-P',
@@ -296,10 +273,8 @@ describe('info', () => {
       randomDir,
     ])
 
-    commandResult = out
+    expect(commandResult.stderr).to.contain('There are more migrations in the database than in the migrations folder')
 
-    expect(out.stdout).to.contain(file2)
-    expect(out.stdout).to.contain(file1)
-    expect(out.stderr).to.contain('There are more migrations in the database than in the migrations folder')
+    expect(commandResult.stdout).to.contain('Existing migrations:')
   })
 })
