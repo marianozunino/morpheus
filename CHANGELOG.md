@@ -1,3 +1,10 @@
+# [4.5.0](https://github.com/marianozunino/morpheus/compare/v4.4.0...v4.5.0) (2025-03-24)
+
+
+### Features
+
+* migration validation command ([daffca2](https://github.com/marianozunino/morpheus/commit/daffca2c6faaf2cab3afb4ecfb08f9cb6f4b6a3d))
+
 # [4.4.0](https://github.com/marianozunino/morpheus/compare/v4.3.0...v4.4.0) (2025-03-21)
 
 
