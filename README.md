@@ -84,7 +84,7 @@ $ npm install -g morpheus4j
 $ morpheus COMMAND
 running command...
 $ morpheus (--version)
-morpheus4j/4.4.0 linux-x64 node-v20.19.0
+morpheus4j/4.4.0 linux-x64 node-v22.14.0
 $ morpheus --help [COMMAND]
 USAGE
   $ morpheus COMMAND
@@ -100,6 +100,7 @@ USAGE
 * [`morpheus info`](#morpheus-info)
 * [`morpheus init`](#morpheus-init)
 * [`morpheus migrate`](#morpheus-migrate)
+* [`morpheus validate`](#morpheus-validate)
 
 ## `morpheus autocomplete [SHELL]`
 
@@ -358,6 +359,57 @@ EXAMPLES
 ```
 
 _See code: [src/commands/migrate.ts](https://github.com/marianozunino/morpheus/blob/v4.4.0/src/commands/migrate.ts)_
+
+## `morpheus validate`
+
+Validate migration state between local files and database
+
+```
+USAGE
+  $ morpheus validate [--json] [--debug] [-c <value>] [-m <value>] [-h <value>] [-p <value>] [-s <value>] [-P
+    <value>] [-u <value>] [-d <value>] [--fail-fast] [-o <value>] [--summary-only]
+
+FLAGS
+  -P, --password=<value>        Neo4j password. Env: 'MORPHEUS_PASSWORD'
+  -c, --configFile=<value>      [default: /home/runner/work/morpheus/morpheus/morpheus.json] Path to the morpheus file
+                                (CWD/morpheus.json by default)
+  -d, --database=<value>        Neo4j database. Env: 'MORPHEUS_DATABASE'
+  -h, --host=<value>            Neo4j host. Env: 'MORPHEUS_HOST'
+  -m, --migrationsPath=<value>  [default: neo4j/migrations] Migrations path. Env: 'MORPHEUS_MIGRATIONS_PATH'
+  -o, --output-file=<value>     Write detailed validation results to a JSON file
+  -p, --port=<value>            Neo4j port. Env: 'MORPHEUS_PORT'
+  -s, --scheme=<value>          Neo4j scheme. Env: 'MORPHEUS_SCHEME'
+  -u, --username=<value>        Neo4j username. Env: 'MORPHEUS_USERNAME'
+      --fail-fast               Exit with error code on first validation failure
+      --summary-only            Show only the summary of validation failures
+
+GLOBAL FLAGS
+  --debug  Enable debug logging
+  --json   Format output as json.
+
+DESCRIPTION
+  Validate migration state between local files and database
+
+  Validates that all migrations in the migrations folder have been applied to the database
+  in the correct order and with matching checksums. Reports discrepancies.
+
+EXAMPLES
+  $ morpheus validate
+
+  $ morpheus validate -m ~/path/to/migrations
+
+  $ morpheus validate --config ./custom-config.json
+
+  $ morpheus validate --fail-fast
+
+  $ morpheus validate --summary-only
+
+  $ morpheus validate --output-file=validation-report.json
+
+  $ morpheus validate --debug
+```
+
+_See code: [src/commands/validate.ts](https://github.com/marianozunino/morpheus/blob/v4.4.0/src/commands/validate.ts)_
 <!-- commandsstop -->
 
 # NestJs Integration <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="25" alt="Nest Logo" /></a>
