@@ -30,9 +30,13 @@ export class Logger {
     console.log(this.formatMessage('info', message, timestamp))
   }
 
-  static initialize(useJson: boolean = false, deubg: boolean = false) {
-    this.logLevel = deubg ? 'debug' : 'info'
+  static initialize(useJson: boolean = false, debug: boolean = false) {
+    this.logLevel = debug ? 'debug' : 'info'
     this.useJson = useJson
+  }
+
+  static isDebugEnabled(): boolean {
+    return this.logLevel === 'debug'
   }
 
   static warn(message: LogMessage): void {

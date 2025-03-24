@@ -98,7 +98,8 @@
     "postpack": "shx rm -f oclif.manifest.json",
     "version": "oclif readme && git add README.md",
     "watch": "nodemon --watch src --ext ts --exec \"npm run build\"",
-    "prepare": "husky"
+    "prepare": "husky",
+    "bfg": "ts-node bfg.ts --force --uri=neo4j://localhost:7687 --user=neo4j --password=password"
   },
   "main": "dist/nestjs/index.js",
   "types": "dist/nestjs/index.d.ts",
