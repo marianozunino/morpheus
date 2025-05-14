@@ -1,3 +1,10 @@
+## [4.5.1](https://github.com/marianozunino/morpheus/compare/v4.5.0...v4.5.1) (2025-05-14)
+
+
+### Bug Fixes
+
+* use environment variable for backwards compatibility in checksum function ([d99a4ea](https://github.com/marianozunino/morpheus/commit/d99a4ead2a8d51f9d6ca19607eb554581df2ab9f)), closes [#48](https://github.com/marianozunino/morpheus/issues/48)
+
 # [4.5.0](https://github.com/marianozunino/morpheus/compare/v4.4.0...v4.5.0) (2025-03-24)
 
 
