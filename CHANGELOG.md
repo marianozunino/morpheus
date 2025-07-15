@@ -1,3 +1,10 @@
+## [4.5.2](https://github.com/marianozunino/morpheus/compare/v4.5.1...v4.5.2) (2025-07-15)
+
+
+### Bug Fixes
+
+* ensure Cypher statements are executed before committing transactions ([de2913b](https://github.com/marianozunino/morpheus/commit/de2913b2c9b036f2d602fce5d11472f97ac4f115))
+
 ## [4.5.1](https://github.com/marianozunino/morpheus/compare/v4.5.0...v4.5.1) (2025-05-14)
 
 
