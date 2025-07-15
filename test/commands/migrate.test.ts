@@ -142,16 +142,21 @@ describe('migrate command', () => {
 
   describe('transaction modes', () => {
     let commitSpy: sinon.SinonSpy
+    let runSpy: sinon.SinonSpy
 
     beforeEach(() => {
       commitSpy = sinon.stub(neo4j.Transaction.prototype, 'commit').callThrough()
+      runSpy = sinon.stub(neo4j.Transaction.prototype, 'run').callThrough()
     })
 
     it('uses per-migration transactions by default', async () => {
       const randomDir = getRandomMigrationDir(testContext.configDir)
 
+      // Create a baseline migration first
+      await runCommand(['create', 'baseline', '-m', randomDir])
       await runMigrationsOnContainer(testContext.container, randomDir, testContext.configFile)
 
+      // Now create and test the actual migration
       const result = await runCommand(['create', 'multi-statement', '-m', randomDir])
       const migrationPath = getMigrationPathFromOutput(result.stdout)
 
@@ -163,20 +168,30 @@ CREATE (y:Node {name: "test2"});
 CREATE (z:Node {name: "test3"});`,
       )
 
+      // Reset spies again before running the test migration
       commitSpy.resetHistory()
+      runSpy.resetHistory()
 
       commandResult = await runMigrationsOnContainer(testContext.container, randomDir, testContext.configFile, [
         '--transaction-mode=PER_MIGRATION',
       ])
 
       expect(commitSpy.callCount).to.equal(2)
+      expect(runSpy.callCount).to.equal(5)
     })
 
     it('uses per-statement transactions when specified', async () => {
       const randomDir = getRandomMigrationDir(testContext.configDir)
 
+      // Create a baseline migration first
+      await runCommand(['create', 'baseline', '-m', randomDir])
       await runMigrationsOnContainer(testContext.container, randomDir, testContext.configFile)
 
+      // Reset spies after baseline migration
+      commitSpy.resetHistory()
+      runSpy.resetHistory()
+
+      // Now create and test the actual migration
       const result = await runCommand(['create', 'multi-statement', '-m', randomDir])
       const migrationPath = getMigrationPathFromOutput(result.stdout)
 
@@ -188,13 +203,12 @@ CREATE (y:Node {name: "test2"});
 CREATE (z:Node {name: "test3"});`,
       )
 
-      commitSpy.resetHistory()
-
       commandResult = await runMigrationsOnContainer(testContext.container, randomDir, testContext.configFile, [
         '--transaction-mode=PER_STATEMENT',
       ])
 
       expect(commitSpy.callCount).to.equal(5)
+      expect(runSpy.callCount).to.equal(5)
     })
   })
 })

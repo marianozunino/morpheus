@@ -103,6 +103,7 @@ export class Repository {
         Logger.debug(`With parameters: ${JSON.stringify(query.parameters)}`)
       }
 
+      await transaction.run(query.statement, query.parameters || {})
       await transaction.commit()
     } catch (error) {
       await transaction.rollback()
